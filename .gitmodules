@@ -1,3 +1,6 @@
 [submodule "extern/flutter"]
 	path = extern/flutter
 	url = https://github.com/flutter/flutter.git
+[submodule "extern/depot_tools"]
+	path = extern/depot_tools
+	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
