@@ -17,9 +17,22 @@ public sealed unsafe class ImpellerParagraphBuilderHandle : ImpellerSafeHandle
             throw new ArgumentNullException(nameof(context));
         }
 
-        var native = ImpellerNative.ImpellerParagraphBuilderNew(context.DangerousGetHandle());
-        return new ImpellerParagraphBuilderHandle(
-            EnsureSuccess(native, "Failed to create Impeller paragraph builder."));
+        var addedRef = false;
+
+        try
+        {
+            context.DangerousAddRef(ref addedRef);
+            var native = ImpellerNative.ImpellerParagraphBuilderNew(context.DangerousGetHandle());
+            return new ImpellerParagraphBuilderHandle(
+                EnsureSuccess(native, "Failed to create Impeller paragraph builder."));
+        }
+        finally
+        {
+            if (addedRef)
+            {
+                context.DangerousRelease();
+            }
+        }
     }
 
     internal void Retain()

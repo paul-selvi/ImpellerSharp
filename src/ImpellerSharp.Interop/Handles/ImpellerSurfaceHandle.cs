@@ -27,11 +27,24 @@ public sealed unsafe class ImpellerSurfaceHandle : ImpellerSafeHandle
             throw new ArgumentException("CAMetalDrawable pointer must not be null.", nameof(metalDrawable));
         }
 
-        var native = ImpellerNative.ImpellerSurfaceCreateWrappedMetalDrawableNew(
-            context.DangerousGetHandle(),
-            metalDrawable);
+        var addedRef = false;
 
-        return FromOwned(native);
+        try
+        {
+            context.DangerousAddRef(ref addedRef);
+            var native = ImpellerNative.ImpellerSurfaceCreateWrappedMetalDrawableNew(
+                context.DangerousGetHandle(),
+                metalDrawable);
+
+            return FromOwned(native);
+        }
+        finally
+        {
+            if (addedRef)
+            {
+                context.DangerousRelease();
+            }
+        }
     }
 
     public static ImpellerSurfaceHandle WrapFramebuffer(
@@ -50,13 +63,26 @@ public sealed unsafe class ImpellerSurfaceHandle : ImpellerSafeHandle
             throw new ArgumentException("Framebuffer object must not be zero.", nameof(framebuffer));
         }
 
-        var native = ImpellerNative.ImpellerSurfaceCreateWrappedFBONew(
-            context.DangerousGetHandle(),
-            framebuffer,
-            pixelFormat,
-            in size);
+        var addedRef = false;
 
-        return FromOwned(native);
+        try
+        {
+            context.DangerousAddRef(ref addedRef);
+            var native = ImpellerNative.ImpellerSurfaceCreateWrappedFBONew(
+                context.DangerousGetHandle(),
+                framebuffer,
+                pixelFormat,
+                in size);
+
+            return FromOwned(native);
+        }
+        finally
+        {
+            if (addedRef)
+            {
+                context.DangerousRelease();
+            }
+        }
     }
 
     public static ImpellerSurfaceHandle WrapMetalTexture(ImpellerContextHandle context, nint metalTexture)
@@ -71,11 +97,24 @@ public sealed unsafe class ImpellerSurfaceHandle : ImpellerSafeHandle
             throw new ArgumentException("MTLTexture pointer must not be null.", nameof(metalTexture));
         }
 
-        var native = ImpellerNative.ImpellerSurfaceCreateWrappedMetalTextureNew(
-            context.DangerousGetHandle(),
-            metalTexture);
+        var addedRef = false;
 
-        return FromOwned(native);
+        try
+        {
+            context.DangerousAddRef(ref addedRef);
+            var native = ImpellerNative.ImpellerSurfaceCreateWrappedMetalTextureNew(
+                context.DangerousGetHandle(),
+                metalTexture);
+
+            return FromOwned(native);
+        }
+        finally
+        {
+            if (addedRef)
+            {
+                context.DangerousRelease();
+            }
+        }
     }
 
     internal void Retain()

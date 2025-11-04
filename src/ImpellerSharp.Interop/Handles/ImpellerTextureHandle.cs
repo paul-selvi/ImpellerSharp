@@ -26,17 +26,35 @@ public sealed unsafe class ImpellerTextureHandle : ImpellerSafeHandle
             throw new ArgumentNullException(nameof(context));
         }
 
-        var mapping = ImpellerMappingUtilities.Create(contents, out var userData);
-
-        var native = ImpellerNative.ImpellerTextureCreateWithContentsNew(
-            context.DangerousGetHandle(),
-            in descriptor,
-            in mapping,
-            userData);
-
-        if (native == nint.Zero)
+        if (contents.IsEmpty)
         {
-            ImpellerMappingUtilities.Free(userData);
+            throw new ArgumentException("Texture data must not be empty.", nameof(contents));
+        }
+
+        var mapping = ImpellerMappingUtilities.Create(contents, out var userData);
+        var addedRef = false;
+        nint native = nint.Zero;
+
+        try
+        {
+            context.DangerousAddRef(ref addedRef);
+            native = ImpellerNative.ImpellerTextureCreateWithContentsNew(
+                context.DangerousGetHandle(),
+                in descriptor,
+                in mapping,
+                userData);
+        }
+        finally
+        {
+            if (native == nint.Zero)
+            {
+                ImpellerMappingUtilities.Free(userData);
+            }
+
+            if (addedRef)
+            {
+                context.DangerousRelease();
+            }
         }
 
         return FromOwned(native);
@@ -52,10 +70,24 @@ public sealed unsafe class ImpellerTextureHandle : ImpellerSafeHandle
             throw new ArgumentNullException(nameof(context));
         }
 
-        var native = ImpellerNative.ImpellerTextureCreateWithOpenGLTextureHandleNew(
-            context.DangerousGetHandle(),
-            in descriptor,
-            textureHandle);
+        var addedRef = false;
+        nint native = nint.Zero;
+
+        try
+        {
+            context.DangerousAddRef(ref addedRef);
+            native = ImpellerNative.ImpellerTextureCreateWithOpenGLTextureHandleNew(
+                context.DangerousGetHandle(),
+                in descriptor,
+                textureHandle);
+        }
+        finally
+        {
+            if (addedRef)
+            {
+                context.DangerousRelease();
+            }
+        }
 
         return FromOwned(native);
     }
