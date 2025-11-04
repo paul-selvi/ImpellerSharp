@@ -22,6 +22,14 @@ public partial class MainWindow : Window
     private ImpellerSkiaView? _skiaView;
     private Slider? _complexitySlider;
     private TextBlock? _complexityLabel;
+    private TabControl? _sceneTabs;
+    private SceneKind _currentScene = SceneKind.BasicDemo;
+
+    private enum SceneKind
+    {
+        BasicDemo,
+        MotionMark
+    }
 
     public MainWindow()
     {
@@ -59,24 +67,25 @@ public partial class MainWindow : Window
             }
         }
 
-        _complexityLabel = this.FindControl<TextBlock>("ComplexityValue");
+        _sceneTabs = this.FindControl<TabControl>("SceneTabs");
+        if (_sceneTabs is not null)
+        {
+            _sceneTabs.SelectionChanged += SceneTabsOnSelectionChanged;
+            _sceneTabs.SelectedIndex = 0;
+        }
 
-        if (this.FindControl<Slider>("ComplexitySlider") is { } slider)
-        {
-            _complexitySlider = slider;
-            slider.PropertyChanged += ComplexitySliderOnPropertyChanged;
-            ApplyComplexity(slider.Value);
-        }
-        else
-        {
-            ApplyComplexity(8);
-        }
+        UpdateScene(SceneKind.BasicDemo);
 
         Closed += (_, _) =>
         {
             if (_complexitySlider is not null)
             {
                 _complexitySlider.PropertyChanged -= ComplexitySliderOnPropertyChanged;
+            }
+
+            if (_sceneTabs is not null)
+            {
+                _sceneTabs.SelectionChanged -= SceneTabsOnSelectionChanged;
             }
 
             _impeller.Dispose();
@@ -96,10 +105,63 @@ public partial class MainWindow : Window
         var complexity = Math.Clamp((int)Math.Round(value), 0, 24);
         if (_complexityLabel is not null)
         {
-            _complexityLabel.Text = complexity.ToString();
+            _complexityLabel.Text = _currentScene == SceneKind.MotionMark ? complexity.ToString() : string.Empty;
         }
 
         _impeller.SetComplexity(complexity);
+        RequestFrame();
+    }
+
+    private void SceneTabsOnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        var index = _sceneTabs?.SelectedIndex ?? 0;
+        UpdateScene(index == 1 ? SceneKind.MotionMark : SceneKind.BasicDemo);
+    }
+
+    private void UpdateScene(SceneKind scene)
+    {
+        if (_currentScene == scene)
+        {
+            return;
+        }
+
+        _currentScene = scene;
+        _impeller.SetScene(scene);
+
+        if (scene == SceneKind.MotionMark)
+        {
+            EnsureMotionControls();
+            if (_complexitySlider is { } slider)
+            {
+                ApplyComplexity(slider.Value);
+            }
+        }
+        else if (_complexityLabel is not null)
+        {
+            _complexityLabel.Text = string.Empty;
+        }
+
+        RequestFrame();
+    }
+
+    private void EnsureMotionControls()
+    {
+        if (_complexitySlider is null)
+        {
+            var slider = this.FindControl<Slider>("ComplexitySlider");
+            if (slider is not null)
+            {
+                _complexitySlider = slider;
+                slider.PropertyChanged += ComplexitySliderOnPropertyChanged;
+            }
+        }
+
+        _complexityLabel ??= this.FindControl<TextBlock>("ComplexityValue");
+    }
+
+    private void RequestFrame()
+    {
+        _skiaView?.InvalidateVisual();
     }
 
     private void OnRenderMetal(object? sender, MetalRenderEventArgs e)
@@ -159,6 +221,7 @@ public partial class MainWindow : Window
     private sealed class ImpellerRenderer : IDisposable
     {
         private ImpellerContextHandle? _context;
+        private SceneKind _scene = SceneKind.BasicDemo;
         private readonly Channel<WorkerMessage> _workerChannel = Channel.CreateUnbounded<WorkerMessage>(
             new UnboundedChannelOptions
             {
@@ -177,6 +240,12 @@ public partial class MainWindow : Window
         public void SetComplexity(int complexity)
         {
             _workerChannel.Writer.TryWrite(WorkerMessage.ForComplexity(complexity));
+        }
+
+        public void SetScene(SceneKind scene)
+        {
+            _scene = scene;
+            _workerChannel.Writer.TryWrite(WorkerMessage.ForScene(scene));
         }
 
         public bool TryRenderSkia(ImpellerSkiaRenderEventArgs args)
@@ -294,7 +363,7 @@ public partial class MainWindow : Window
 
         private void RequestRender(float width, float height)
         {
-            _workerChannel.Writer.TryWrite(WorkerMessage.ForRender(width, height));
+            _workerChannel.Writer.TryWrite(WorkerMessage.ForRender(width, height, _scene));
         }
 
         private void UpdateDisplayList()
@@ -313,7 +382,11 @@ public partial class MainWindow : Window
         {
             try
             {
-                using var simulation = new MotionMarkSimulation();
+                using var basicScene = new BasicDemoScene();
+                using var motionScene = new MotionMarkSimulation();
+                IImpellerScene activeScene = basicScene;
+                var activeKind = SceneKind.BasicDemo;
+
                 var lastWidth = 0f;
                 var lastHeight = 0f;
                 var hasSize = false;
@@ -329,16 +402,33 @@ public partial class MainWindow : Window
                                 lastWidth = message.Width;
                                 lastHeight = message.Height;
                                 hasSize = lastWidth > 0f && lastHeight > 0f;
+                                if (message.Scene != activeKind)
+                                {
+                                    activeKind = message.Scene;
+                                    activeScene = activeKind == SceneKind.MotionMark
+                                        ? (IImpellerScene)motionScene
+                                        : basicScene;
+                                }
                                 rebuildRequested = true;
                                 break;
 
                             case WorkerMessageKind.Complexity:
-                                simulation.SetComplexity(message.Complexity);
+                                motionScene.SetComplexity(message.Complexity);
+                                if (activeKind == SceneKind.MotionMark && hasSize)
+                                {
+                                    rebuildRequested = true;
+                                }
+                                break;
+
+                            case WorkerMessageKind.Scene:
+                                activeKind = message.Scene;
+                                activeScene = activeKind == SceneKind.MotionMark
+                                    ? (IImpellerScene)motionScene
+                                    : basicScene;
                                 if (hasSize)
                                 {
                                     rebuildRequested = true;
                                 }
-
                                 break;
 
                             case WorkerMessageKind.Stop:
@@ -366,11 +456,11 @@ public partial class MainWindow : Window
                     var rendered = false;
                     try
                     {
-                        rendered = simulation.Render(builder, lastWidth, lastHeight);
+                        rendered = activeScene.Render(builder, lastWidth, lastHeight);
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[Impeller] Simulation render failed: {ex}");
+                        Console.WriteLine($"[Impeller] Scene render failed: {ex}");
                     }
 
                     if (!rendered)
@@ -402,33 +492,39 @@ public partial class MainWindow : Window
 
         private readonly struct WorkerMessage
         {
-            private WorkerMessage(WorkerMessageKind kind, float width, float height, int complexity)
+            private WorkerMessage(WorkerMessageKind kind, float width, float height, int complexity, SceneKind scene)
             {
                 Kind = kind;
                 Width = width;
                 Height = height;
                 Complexity = complexity;
+                Scene = scene;
             }
 
             public WorkerMessageKind Kind { get; }
             public float Width { get; }
             public float Height { get; }
             public int Complexity { get; }
+            public SceneKind Scene { get; }
 
-            public static WorkerMessage ForRender(float width, float height) =>
-                new(WorkerMessageKind.Render, width, height, 0);
+            public static WorkerMessage ForRender(float width, float height, SceneKind scene) =>
+                new(WorkerMessageKind.Render, width, height, 0, scene);
 
             public static WorkerMessage ForComplexity(int complexity) =>
-                new(WorkerMessageKind.Complexity, 0f, 0f, complexity);
+                new(WorkerMessageKind.Complexity, 0f, 0f, complexity, SceneKind.BasicDemo);
+
+            public static WorkerMessage ForScene(SceneKind scene) =>
+                new(WorkerMessageKind.Scene, 0f, 0f, 0, scene);
 
             public static WorkerMessage Stop() =>
-                new(WorkerMessageKind.Stop, 0f, 0f, 0);
+                new(WorkerMessageKind.Stop, 0f, 0f, 0, SceneKind.BasicDemo);
         }
 
         private enum WorkerMessageKind : byte
         {
             Render,
             Complexity,
+            Scene,
             Stop
         }
     }

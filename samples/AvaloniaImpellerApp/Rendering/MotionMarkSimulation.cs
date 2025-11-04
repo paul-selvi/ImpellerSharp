@@ -4,7 +4,7 @@ using ImpellerSharp.Interop;
 
 namespace AvaloniaImpellerApp.Rendering;
 
-internal sealed class MotionMarkSimulation : IDisposable
+internal sealed class MotionMarkSimulation : IImpellerScene
 {
     private const int GridWidth = 80;
     private const int GridHeight = 40;

@@ -54,6 +54,12 @@ public sealed unsafe class ImpellerDisplayListBuilderHandle : ImpellerSafeHandle
         ImpellerNative.ImpellerDisplayListBuilderTranslate(handle, x, y);
     }
 
+    public void Rotate(float degrees)
+    {
+        ThrowIfInvalid();
+        ImpellerNative.ImpellerDisplayListBuilderRotate(handle, degrees);
+    }
+
     public void DrawRect(in ImpellerRect rect, ImpellerPaintHandle paint)
     {
         if (paint is null || paint.IsInvalid)

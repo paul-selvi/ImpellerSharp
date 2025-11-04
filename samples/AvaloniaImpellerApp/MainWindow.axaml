@@ -5,19 +5,28 @@
         Height="600"
         Title="Avalonia Impeller Sample">
   <Grid RowDefinitions="Auto,*">
-    <StackPanel Orientation="Horizontal" Spacing="8" Margin="12">
-      <TextBlock Text="Complexity" VerticalAlignment="Center" />
-      <Slider x:Name="ComplexitySlider"
-              Minimum="0"
-              Maximum="24"
-              Value="8"
-              TickFrequency="1"
-              IsSnapToTickEnabled="True"
-              Width="220" />
-      <TextBlock x:Name="ComplexityValue"
-                 Text="8"
-                 VerticalAlignment="Center" />
-    </StackPanel>
+    <TabControl x:Name="SceneTabs" Grid.Row="0" Margin="12">
+      <TabItem Header="Basic Demo">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Gradient fills, stroked paths, and typography rendered with Impeller." />
+        </StackPanel>
+      </TabItem>
+      <TabItem Header="MotionMark">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="Complexity" VerticalAlignment="Center" />
+          <Slider x:Name="ComplexitySlider"
+                  Minimum="0"
+                  Maximum="24"
+                  Value="8"
+                  TickFrequency="1"
+                  IsSnapToTickEnabled="True"
+                  Width="220" />
+          <TextBlock x:Name="ComplexityValue"
+                     Text="8"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+      </TabItem>
+    </TabControl>
     <ContentControl x:Name="RenderHost" Grid.Row="1" />
   </Grid>
 </Window>

@@ -40,6 +40,10 @@ internal static partial class ImpellerNative
     [SuppressGCTransition]
     internal static partial void ImpellerDisplayListBuilderTranslate(nint builder, float x, float y);
 
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerDisplayListBuilderRotate")]
+    [SuppressGCTransition]
+    internal static partial void ImpellerDisplayListBuilderRotate(nint builder, float degrees);
+
     [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerDisplayListBuilderDrawRect")]
     [SuppressGCTransition]
     internal static unsafe partial void ImpellerDisplayListBuilderDrawRect(nint builder, ImpellerRect* rect, nint paint);
