@@ -291,6 +291,22 @@ Each view/control can be consumed directly from XAML or code-behind once the cor
 
 Use the slider to explore Impeller’s geometry throughput. The renderer drops stale work if the worker falls behind, keeping frame pacing predictable.
 
+### Sample: Native MotionMark Host (Metal)
+
+The `samples/MotionMark` project is a lightweight macOS console host that drives Impeller directly through the managed bindings:
+
+- Creates a GLFW window, wraps the underlying `CAMetalLayer`, and hands each `CAMetalDrawable` to Impeller via `ImpellerSurfaceHandle`.
+- Renders a MotionMark-inspired “particle storm” animation entirely on the GPU using display lists, blend modes, and per-frame transforms.
+- Demonstrates how to keep the Impeller context alive via `SafeHandle` retain/release calls and how to marshal Objective‑C selectors from .NET.
+
+To run it (after ensuring `ImpellerSharp.Native` binaries are on your `PATH`/`DYLD_LIBRARY_PATH`):
+
+```bash
+dotnet run --project samples/MotionMark/MotionMark.csproj
+```
+
+The sample depends on the bundled Silk.NET GLFW runtime and currently supports macOS + Metal targets.
+
 ---
 
 ## NuGet Packaging

@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Silk.NET.GLFW" Version="2.21.0" />
+    <PackageReference Include="Ultz.Native.GLFW" Version="3.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\AvaloniaImpellerApp\Rendering\IImpellerScene.cs" Link="Rendering\IImpellerScene.cs" />
+    <Compile Include="..\AvaloniaImpellerApp\Rendering\MotionMarkSimulation.cs" Link="Rendering\MotionMarkSimulation.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ImpellerSharp.Interop\ImpellerSharp.Interop.csproj" />
+    <ProjectReference Include="..\..\src\ImpellerSharp.Native\ImpellerSharp.Native.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <Target Name="CopyImpellerNativeBinaries" AfterTargets="Build">
+    <ItemGroup>
+      <ImpellerNativeFiles Include="$(MSBuildThisFileDirectory)..\..\src\ImpellerSharp.Native\bin\$(Configuration)\net8.0\runtimes\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ImpellerNativeFiles)"
+          DestinationFiles="@(ImpellerNativeFiles->'$(OutDir)%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          Condition="@(ImpellerNativeFiles) != ''" />
+  </Target>
+
+</Project>
