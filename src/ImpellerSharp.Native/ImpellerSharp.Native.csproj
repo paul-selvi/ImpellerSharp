@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>false</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <PackageId>ImpellerSharp.Native</PackageId>
+    <Description>Native Impeller binaries packaged for ImpellerSharp.</Description>
+    <PackageTags>impeller;rendering;gpu;native</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <NoWarn>NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('$(NativeArtifactsDir)')">
+    <None Include="$(NativeArtifactsDir)/**" Pack="true" PackagePath="runtimes/" Visible="false" />
+  </ItemGroup>
+</Project>

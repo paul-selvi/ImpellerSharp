@@ -1,0 +1,151 @@
+name: Release ImpellerSharp
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: 1
+
+permissions:
+  contents: write
+
+jobs:
+  native:
+    name: Build native (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos
+            runner: macos-latest
+            platform: macos
+            arch: arm64
+          - os: linux
+            runner: ubuntu-22.04
+            platform: linux
+            arch: x64
+          - os: windows
+            runner: windows-latest
+            platform: windows
+            arch: x64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Add depot_tools to PATH (Unix)
+        if: matrix.os != 'windows'
+        run: echo "${{ github.workspace }}/extern/depot_tools" >> $GITHUB_PATH
+        shell: bash
+
+      - name: Add depot_tools to PATH (Windows)
+        if: matrix.os == 'windows'
+        run: Add-Content $env:GITHUB_PATH "$env:GITHUB_WORKSPACE\extern\depot_tools"
+
+      - name: Install dependencies (macOS)
+        if: matrix.os == 'macos'
+        run: |
+          brew update
+          brew install ninja python@3.11
+        shell: bash
+
+      - name: Install dependencies (Linux)
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip ninja-build clang pkg-config
+
+      - name: Install dependencies (Windows)
+        if: matrix.os == 'windows'
+        run: |
+          choco install -y ninja python --no-progress
+
+      - name: Build native Impeller (Unix)
+        if: matrix.os != 'windows'
+        run: >
+          python3 build/native/build_impeller.py
+          --platform ${{ matrix.platform }}
+          --arch ${{ matrix.arch }}
+          --configuration Release
+
+      - name: Build native Impeller (Windows)
+        if: matrix.os == 'windows'
+        run: >
+          python build/native/build_impeller.py
+          --platform ${{ matrix.platform }}
+          --arch ${{ matrix.arch }}
+          --configuration Release
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.os }}
+          path: artifacts/native/**
+
+  release:
+    name: Pack & Publish
+    runs-on: ubuntu-22.04
+    needs: native
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Download native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: artifacts/native
+          merge-multiple: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore ImpellerSharp.sln
+
+      - name: Build managed projects
+        run: dotnet build ImpellerSharp.sln -c Release
+
+      - name: Pack NuGet packages
+        run: |
+          dotnet pack src/ImpellerSharp.Native/ImpellerSharp.Native.csproj -c Release -o artifacts/nuget
+          dotnet pack src/ImpellerSharp.Interop/ImpellerSharp.Interop.csproj -c Release -o artifacts/nuget
+          dotnet pack src/ImpellerSharp.Avalonia/ImpellerSharp.Avalonia.csproj -c Release -o artifacts/nuget
+          dotnet pack src/ImpellerSharp.Avalonia.Mac/ImpellerSharp.Avalonia.Mac.csproj -c Release -o artifacts/nuget
+          dotnet pack src/ImpellerSharp.Avalonia.Windows/ImpellerSharp.Avalonia.Windows.csproj -c Release -o artifacts/nuget
+          dotnet pack src/ImpellerSharp.Avalonia.Linux/ImpellerSharp.Avalonia.Linux.csproj -c Release -o artifacts/nuget
+
+      - name: Upload NuGet packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-nugets
+          path: artifacts/nuget
+
+      - name: Publish to NuGet
+        if: secrets.NUGET_API_KEY != ''
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          for pkg in artifacts/nuget/*.nupkg; do
+            dotnet nuget push "$pkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate;
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: artifacts/nuget/*.nupkg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

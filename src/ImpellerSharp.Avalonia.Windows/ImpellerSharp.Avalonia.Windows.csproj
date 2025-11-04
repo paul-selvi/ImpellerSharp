@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>true</IsPackable>
+    <AssemblyName>ImpellerSharp.Avalonia.Windows</AssemblyName>
+    <RootNamespace>ImpellerSharp.Avalonia.Windows</RootNamespace>
+    <PackageId>ImpellerSharp.Avalonia.Windows</PackageId>
+    <Description>Windows-specific helpers for hosting Impeller in Avalonia.</Description>
+    <PackageTags>impeller;avalonia;windows</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ImpellerSharp.Avalonia\ImpellerSharp.Avalonia.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.8" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.8" />
+  </ItemGroup>
+</Project>

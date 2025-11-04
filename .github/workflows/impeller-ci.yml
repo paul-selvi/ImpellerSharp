@@ -1,0 +1,99 @@
+name: Impeller CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  BUILD_CONFIGURATION: Release
+
+jobs:
+  native-build:
+    name: Native Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-14
+            target_os: mac
+            target_cpu: arm64
+            artifact_name: impeller-native-macos-arm64
+          - os: ubuntu-22.04
+            target_os: linux
+            target_cpu: x64
+            artifact_name: impeller-native-linux-x64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          if [[ "${{ matrix.os }}" == macos* ]]; then
+            brew install ninja
+          else
+            sudo apt-get update
+            sudo apt-get install -y ninja-build clang
+          fi
+      - name: Sync dependencies
+        run: gclient sync
+      - name: Generate GN files
+        run: ./engine/src/flutter/tools/gn --unoptimized --runtime-mode debug --${{ matrix.target_os }} --target-dir impeller_host_debug --${{ matrix.target_os }}-cpu ${{ matrix.target_cpu }}
+      - name: Build Impeller
+        run: ninja -C engine/src/out/impeller_host_debug flutter/impeller:impeller
+      - name: Upload native artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            engine/src/out/impeller_host_debug/impeller.h
+            engine/src/out/impeller_host_debug/**/*impeller*.{dylib,so,dll}
+
+  managed-build:
+    name: Managed Build & Test
+    runs-on: ubuntu-22.04
+    needs: native-build
+    strategy:
+      matrix:
+        native:
+          - artifact: impeller-native-macos-arm64
+          - artifact: impeller-native-linux-x64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.native.artifact }}
+          path: native/${{ matrix.native.artifact }}
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Build
+        run: dotnet build src/ImpellerSharp.Interop -c $BUILD_CONFIGURATION
+      - name: Test
+        run: dotnet test src/ImpellerSharp.Interop -c $BUILD_CONFIGURATION --no-build
+
+  package:
+    name: Package
+    runs-on: ubuntu-22.04
+    needs: managed-build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Pack
+        run: dotnet pack src/ImpellerSharp.Interop -c $BUILD_CONFIGURATION -o artifacts
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: impeller-nuget
+          path: artifacts/*.nupkg

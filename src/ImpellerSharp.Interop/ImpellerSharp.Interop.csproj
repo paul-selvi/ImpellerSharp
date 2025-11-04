@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AssemblyName>ImpellerSharp.Interop</AssemblyName>
+    <RootNamespace>ImpellerSharp.Interop</RootNamespace>
+    <EnablePreviewFeatures>false</EnablePreviewFeatures>
+    <PackageId>ImpellerSharp.Interop</PackageId>
+    <Description>.NET interop bindings for the Impeller rendering engine.</Description>
+    <PackageTags>impeller;rendering;gpu;flutter;interop</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ImpellerSharp.Native\ImpellerSharp.Native.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

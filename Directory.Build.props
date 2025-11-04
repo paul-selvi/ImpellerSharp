@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <ImpellerSharpVersion>0.1.0</ImpellerSharpVersion>
+    <RepositoryUrl>https://github.com/yourname/ImpellerSharp</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/yourname/ImpellerSharp</PackageProjectUrl>
+    <Authors>ImpellerSharp Contributors</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <NativeArtifactsDir>$(MSBuildThisFileDirectory)artifacts/native</NativeArtifactsDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' != ''">
+    <PackageVersion>$(ImpellerSharpVersion)</PackageVersion>
+    <Version>$(ImpellerSharpVersion)</Version>
+  </PropertyGroup>
+</Project>

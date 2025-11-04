@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.8" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.8" />
+    <PackageReference Include="Avalonia.Skia" Version="11.3.8" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.8" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ImpellerSharp.Interop\ImpellerSharp.Interop.csproj" />
+    <ProjectReference Include="..\..\src\ImpellerSharp.Avalonia\ImpellerSharp.Avalonia.csproj" />
+    <ProjectReference Include="..\..\src\ImpellerSharp.Avalonia.Mac\ImpellerSharp.Avalonia.Mac.csproj" />
+    <ProjectReference Include="..\..\src\ImpellerSharp.Avalonia.Windows\ImpellerSharp.Avalonia.Windows.csproj" />
+    <ProjectReference Include="..\..\src\ImpellerSharp.Avalonia.Linux\ImpellerSharp.Avalonia.Linux.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\extern\flutter\engine\src\out\impeller_host_debug\libimpeller.dylib">
+      <Link>libimpeller.dylib</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>
