@@ -165,6 +165,69 @@ public sealed unsafe class ImpellerColorSourceHandle : ImpellerSafeHandle
         return FromOwned(native);
     }
 
+    public static ImpellerColorSourceHandle CreateFragmentProgram(
+        ImpellerContextHandle context,
+        ImpellerFragmentProgramHandle fragmentProgram,
+        ReadOnlySpan<ImpellerTextureHandle?> samplers,
+        ReadOnlySpan<byte> uniformData)
+    {
+        if (context is null)
+        {
+            throw new ArgumentNullException(nameof(context));
+        }
+
+        if (fragmentProgram is null)
+        {
+            throw new ArgumentNullException(nameof(fragmentProgram));
+        }
+
+        Span<nint> samplerHandles = samplers.Length <= 16
+            ? stackalloc nint[samplers.Length]
+            : new nint[samplers.Length];
+
+        for (var i = 0; i < samplers.Length; ++i)
+        {
+            if (samplers[i] is null)
+            {
+                throw new ArgumentNullException(nameof(samplers), "Sampler textures must not be null.");
+            }
+
+            samplerHandles[i] = samplers[i]!.DangerousGetHandle();
+        }
+
+        var addedRef = false;
+        nint native = nint.Zero;
+
+        try
+        {
+            context.DangerousAddRef(ref addedRef);
+
+            fixed (nint* samplerPtr = samplerHandles)
+            fixed (byte* dataPtr = uniformData)
+            {
+                var count = (nuint)samplers.Length;
+                var dataLength = (nuint)uniformData.Length;
+
+                native = ImpellerNative.ImpellerColorSourceCreateFragmentProgramNew(
+                    context.DangerousGetHandle(),
+                    fragmentProgram.DangerousGetHandle(),
+                    samplerPtr,
+                    count,
+                    dataPtr,
+                    dataLength);
+            }
+        }
+        finally
+        {
+            if (addedRef)
+            {
+                context.DangerousRelease();
+            }
+        }
+
+        return FromOwned(native);
+    }
+
     internal void Retain()
     {
         ThrowIfInvalid();

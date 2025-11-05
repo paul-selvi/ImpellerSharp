@@ -69,7 +69,7 @@ public sealed unsafe class MetalGlfwAppHost : IDisposable
             _glfwInitialised = true;
             GlfwNative.Initialise(_glfw);
 
-            ConfigureWindowHints(_glfw);
+            ConfigureWindowHints(_glfw, _options.Visible);
             _window = _glfw.CreateWindow(
                 _options.Width,
                 _options.Height,
@@ -98,7 +98,7 @@ public sealed unsafe class MetalGlfwAppHost : IDisposable
             }
 
             using var context = ImpellerContextHandle.CreateMetal();
-            return RunLoop(context, renderFrame);
+            return RunLoop(context, renderFrame, _options.Visible);
         }
         catch (ImpellerInteropException ex)
         {
@@ -116,11 +116,12 @@ public sealed unsafe class MetalGlfwAppHost : IDisposable
         }
     }
 
-    private int RunLoop(ImpellerContextHandle context, Func<ImpellerDisplayListBuilderHandle, float, float, bool> renderFrame)
+    private int RunLoop(ImpellerContextHandle context, Func<ImpellerDisplayListBuilderHandle, float, float, bool> renderFrame, bool visible)
     {
         var exitCode = 0;
+        var running = true;
 
-        while (_window is not null && _glfw is not null && !_glfw.WindowShouldClose(_window))
+        while (running && _window is not null && _glfw is not null && (visible ? !_glfw.WindowShouldClose(_window) : true))
         {
             _glfw.PollEvents();
 
@@ -161,8 +162,10 @@ public sealed unsafe class MetalGlfwAppHost : IDisposable
                 using var surface = ImpellerSurfaceHandle.WrapMetalDrawable(context, drawable);
                 using var builder = ImpellerDisplayListBuilderHandle.Create();
 
-                if (!renderFrame(builder, framebufferWidth, framebufferHeight))
+                var shouldPresent = renderFrame(builder, framebufferWidth, framebufferHeight);
+                if (!shouldPresent)
                 {
+                    running = false;
                     continue;
                 }
 
@@ -221,11 +224,11 @@ public sealed unsafe class MetalGlfwAppHost : IDisposable
         }
     }
 
-    private static void ConfigureWindowHints(Glfw glfw)
+    private static void ConfigureWindowHints(Glfw glfw, bool visible)
     {
         glfw.WindowHint(WindowHintClientApi.ClientApi, ClientApi.NoApi);
         glfw.WindowHint(WindowHintBool.Decorated, true);
-        glfw.WindowHint(WindowHintBool.Visible, true);
+        glfw.WindowHint(WindowHintBool.Visible, visible);
     }
 
     private bool EnsureImpellerNativeLoaded()

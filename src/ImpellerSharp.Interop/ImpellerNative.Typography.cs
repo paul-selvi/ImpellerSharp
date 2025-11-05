@@ -132,4 +132,44 @@ internal static partial class ImpellerNative
     [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerParagraphGetHeight")]
     [SuppressGCTransition]
     internal static partial float ImpellerParagraphGetHeight(nint paragraph);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerParagraphGetMaxIntrinsicWidth")]
+    [SuppressGCTransition]
+    internal static partial float ImpellerParagraphGetMaxIntrinsicWidth(nint paragraph);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerParagraphGetIdeographicBaseline")]
+    [SuppressGCTransition]
+    internal static partial float ImpellerParagraphGetIdeographicBaseline(nint paragraph);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerParagraphGetAlphabeticBaseline")]
+    [SuppressGCTransition]
+    internal static partial float ImpellerParagraphGetAlphabeticBaseline(nint paragraph);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerParagraphGetLineCount")]
+    [SuppressGCTransition]
+    internal static partial uint ImpellerParagraphGetLineCount(nint paragraph);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerParagraphGetWordBoundary")]
+    [SuppressGCTransition]
+    internal static unsafe partial void ImpellerParagraphGetWordBoundary(
+        nint paragraph,
+        nuint codeUnitIndex,
+        ImpellerRange* range);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerParagraphGetLineMetrics")]
+    [SuppressGCTransition]
+    internal static partial nint ImpellerParagraphGetLineMetrics(nint paragraph);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerParagraphCreateGlyphInfoAtCodeUnitIndexNew")]
+    [SuppressGCTransition]
+    internal static partial nint ImpellerParagraphCreateGlyphInfoAtCodeUnitIndexNew(
+        nint paragraph,
+        nuint codeUnitIndex);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerParagraphCreateGlyphInfoAtParagraphCoordinatesNew")]
+    [SuppressGCTransition]
+    internal static partial nint ImpellerParagraphCreateGlyphInfoAtParagraphCoordinatesNew(
+        nint paragraph,
+        double x,
+        double y);
 }

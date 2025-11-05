@@ -33,18 +33,32 @@ This plan distills the Impeller architecture and tooling documented in `extern/f
    - [x] Task 4.3 – Provide span-friendly upload APIs (`ReadOnlySpan<byte>`, `Span<float>`) that pin or stack-allocate buffers to minimize GC pressure.  
    - [x] Task 4.4 – Expose command encoder APIs via function-pointer tables (`delegate*` caches) to avoid repeated lookup overhead.  
    - [x] Task 4.5 – Integrate diagnostics via `EventSource` or `ActivitySource` with opt-in native tracing interop.
+   - [x] Task 4.6 – Mirror advanced Impeller toolkit APIs (fragment programs, color/mask/image filters, typography metrics, display-list transforms & clipping) in managed bindings.
 
 5. [ ] Milestone 5 – Memory, performance, and safety validation  
    - [ ] Task 5.1 – Benchmark baseline frame submission latency comparing direct native usage vs. managed wrapper using representative workloads.  
+     - Status: Benchmark harness now includes a native ABI baseline via `NativeDisplayListBenchmark` plus the new `TextureUploadBenchmark` (managed vs. C ABI texture streaming), emits GitHub-friendly Markdown/JSON exports, and the Linux CI leg uploads `BenchmarkArtifacts` for review.  
+     - Next: Expand scenarios to cover surface submission and end-to-end frame presentation, then correlate managed/native timings in dashboard form.  
    - [ ] Task 5.2 – Profile allocations with .NET tracing tools (`dotnet-trace`, `EventPipe`) ensuring zero allocations per frame in hot paths.  
+     - Status: Guarded texture uploads in `TextureFactory.CreateTexture` minimize managed churn; `build/scripts/collect_allocations.sh` wraps `dotnet-trace` over the BenchmarkDotNet harness to produce `.nettrace` captures for texture-upload scenarios.  
+     - Next: Add Speedscope/summary post-processing and integrate results into CI dashboards.  
    - [ ] Task 5.3 – Implement stress tests that exercise texture streaming, large uniform buffers, and shader warm-up; monitor GPU/CPU synchronization.  
-   - [ ] Task 5.4 – Add guardrails for misuse (debug asserts, optional contracts) without impacting release builds.
+     - Status: Stress scenarios enumerated in `docs/benchmarking-plan.md`; sample harnesses not yet implemented.  
+     - Next: Extend `samples/BasicShapes` with configurable texture streaming loops and uniform buffer builders guarded by CLI options.  
+   - [ ] Task 5.4 – Add guardrails for misuse (debug asserts, optional contracts) without impacting release builds.  
+     - Status: `ImpellerInteropOptions` enables strict mode by configuration/AppContext switches, enforcing length checks for texture uploads and surfacing draw failures immediately in `ImpellerSurfaceHandle.DrawDisplayList`.  
+     - Next: Expand strict mode to validate thread affinity and SafeHandle disposal, and expose guard-rail telemetry (e.g., via EventSource counters).  
 
 6. [ ] Milestone 6 – Tooling, packaging, and documentation  
    - [ ] Task 6.1 – Automate GN/Ninja + .NET builds via CI scripts (GitHub Actions/Azure Pipelines) producing native binaries and NuGet packages.  
+     - Status: `impeller-ci.yml` stages downloaded native artifacts before packing, persists benchmark outputs, and conditionally publishes NuGet packages when `NUGET_SOURCE`/`NUGET_API_KEY` are configured.  
    - [ ] Task 6.2 – Provide sample scenes demonstrating standalone Impeller usage from .NET, including MoltenVK setup guidance.  
-   - [ ] Task 6.3 – Write developer guides covering threading, memory ownership, shader pipeline updates, and troubleshooting.  
-   - [ ] Task 6.4 – Establish compatibility matrix by platform, backend, and .NET runtime (CoreCLR, NativeAOT, Mono/Unity).
+     - Status: `samples/BasicShapes` now supports backend selection (`--backend`), headless golden exports (`--headless` + `--output`), texture streaming stressors, typography rendering, and a macOS `screencapture` pipeline; `build/scripts/export_basicshapes_golden.sh` drives scripted comparisons. MoltenVK guidance and cross-platform presentation hosts remain open.  
+     - Next: Validate Vulkan headless mode on CI (MoltenVK/Linux), document setup guidance, and spin out TextureGallery/TextLayout as standalone samples.  
+   - [x] Task 6.3 – Write developer guides covering threading, memory ownership, shader pipeline updates, and troubleshooting.  
+     - Output: `docs/developer-guide.md` and `docs/developer-docs-outline.md` ship comprehensive guidance across the required topics.  
+   - [x] Task 6.4 – Establish compatibility matrix by platform, backend, and .NET runtime (CoreCLR, NativeAOT, Mono/Unity).  
+     - Output: `docs/compatibility-matrix.md` tracks target platforms/backends, runtime support goals, and stretch environments.
 
 ## Milestone 1 Execution Notes
 - **Task 1.1**: `//flutter/impeller:impeller` reduces to `base`, `geometry`, and `tessellator` when rendering is disabled, and pulls in `display_list`, `entity`, `renderer`, `renderer/backend`, and `typographer/backends/skia` when `impeller_supports_rendering` is true. Core dependencies flow through `//flutter/fml`, while `tessellator` adds `//third_party/libtess2` and backend targets add platform frameworks (`Metal.framework`, `MetalPerformanceShaders.framework`) or Vulkan/GL loaders.
@@ -127,6 +141,7 @@ This plan distills the Impeller architecture and tooling documented in `extern/f
 - `ImpellerCommandPointers` caches the hot-path `ImpellerSurfaceDrawDisplayList` export as a `delegate* unmanaged[Cdecl]` to minimise dispatch overhead during frame submission, and `ImpellerDiagnostics` + `ImpellerEventSource` bridge ActivitySource/EventSource telemetry for context creation, texture uploads, and draw submissions.
 
 ## Milestone 5 Planning Notes
+- Add typed wrappers for any remaining toolkit handles still accessed via raw `nint` (e.g., placeholder spans, shadows) to keep API parity with upstream interop headers.
 - **Task 5.1 – Benchmark strategy**  
   - Establish BenchmarkDotNet harness targeting macOS Metal to compare native Impeller SDK vs. managed wrappers. Scenarios: (a) repeated `SurfaceDrawDisplayList` with 1k rects, (b) texture upload loop, (c) surface present call. Collect average/percentile latency and CPU usage. Use native CLI sample for baseline.  
   - Complement managed benchmarks with existing `//flutter/benchmarking` utilities for correlation; ensure consistent compilation flags and warm-up phases.
@@ -156,6 +171,8 @@ This plan distills the Impeller architecture and tooling documented in `extern/f
   - Highlights priority environments (macOS Metal) and stretch goals (Unity).
 
 ## Deliverables & Exit Criteria
+- README modernization landed; follow-up items: diagrams showing Impeller/Rive layering and CI badges once artwork is ready.
+
 - Reproducible build artifacts for Impeller standalone binaries aligned with selected backends.
 - Stable C ABI documented with versioning policy and conformance tests.
 - High-performance .NET bindings with benchmarks demonstrating target frame pacing and memory goals.

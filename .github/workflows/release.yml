@@ -12,10 +12,11 @@ env:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
-  native:
-    name: Build native (${{ matrix.os }})
+  native_impeller:
+    name: Build Impeller native (${{ matrix.os }})
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -33,40 +34,32 @@ jobs:
             runner: windows-latest
             platform: windows
             arch: x64
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
-
       - name: Add depot_tools to PATH (Unix)
         if: matrix.os != 'windows'
         run: echo "${{ github.workspace }}/extern/depot_tools" >> $GITHUB_PATH
         shell: bash
-
       - name: Add depot_tools to PATH (Windows)
         if: matrix.os == 'windows'
         run: Add-Content $env:GITHUB_PATH "$env:GITHUB_WORKSPACE\extern\depot_tools"
-
       - name: Install dependencies (macOS)
         if: matrix.os == 'macos'
         run: |
           brew update
           brew install ninja python@3.11
         shell: bash
-
       - name: Install dependencies (Linux)
         if: matrix.os == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y python3 python3-pip ninja-build clang pkg-config
-
       - name: Install dependencies (Windows)
         if: matrix.os == 'windows'
         run: |
           choco install -y ninja python --no-progress
-
       - name: Build native Impeller (Unix)
         if: matrix.os != 'windows'
         run: >
@@ -74,7 +67,6 @@ jobs:
           --platform ${{ matrix.platform }}
           --arch ${{ matrix.arch }}
           --configuration Release
-
       - name: Build native Impeller (Windows)
         if: matrix.os == 'windows'
         run: >
@@ -82,65 +74,175 @@ jobs:
           --platform ${{ matrix.platform }}
           --arch ${{ matrix.arch }}
           --configuration Release
-
-      - name: Upload native artifact
+      - name: Upload Impeller artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: native-${{ matrix.os }}
+          name: release-native-impeller-${{ matrix.os }}
           path: artifacts/native/**
 
-  release:
-    name: Pack & Publish
+  native_rive:
+    name: Build Rive native (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos
+            runner: macos-latest
+            platform: macos
+            arch: arm64
+          - os: linux
+            runner: ubuntu-22.04
+            platform: linux
+            arch: x64
+          - os: windows
+            runner: windows-latest
+            platform: windows
+            arch: x64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install dependencies (macOS)
+        if: matrix.os == 'macos'
+        run: |
+          brew update
+          brew install cmake ninja python@3.11
+        shell: bash
+      - name: Install dependencies (Linux)
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip ninja-build cmake build-essential
+      - name: Install dependencies (Windows)
+        if: matrix.os == 'windows'
+        run: |
+          choco install -y ninja cmake python --no-progress
+      - name: Cache Rive build
+        uses: actions/cache@v4
+        with:
+          path: extern/rive/out
+          key: release-rive-${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('build/rive/build_rive.py') }}
+          restore-keys: |
+            release-rive-${{ runner.os }}-${{ matrix.arch }}-
+      - name: Build Rive (Unix)
+        if: matrix.os != 'windows'
+        run: >
+          python3 build/rive/build_rive.py
+          --platform ${{ matrix.platform }}
+          --arch ${{ matrix.arch }}
+          --configuration Release
+      - name: Build Rive (Windows)
+        if: matrix.os == 'windows'
+        run: >
+          python build/rive/build_rive.py
+          --platform ${{ matrix.platform }}
+          --arch ${{ matrix.arch }}
+          --configuration Release
+      - name: Upload Rive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-native-rive-${{ matrix.os }}
+          path: artifacts/rive/**
+
+  package:
+    name: Package & Publish
     runs-on: ubuntu-22.04
-    needs: native
+    needs:
+      - native_impeller
+      - native_rive
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Download native artifacts
+      - name: Download Impeller artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: native-*
+          pattern: release-native-impeller-*
           path: artifacts/native
           merge-multiple: true
+
+      - name: Download Rive artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-native-rive-*
+          path: artifacts/rive
+          merge-multiple: true
+
+      - name: Stage native assets
+        run: python3 build/managed/stage_native_assets.py --configuration Release
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
-      - name: Restore
-        run: dotnet restore ImpellerSharp.sln
-
-      - name: Build managed projects
-        run: dotnet build ImpellerSharp.sln -c Release
+      - name: Restore dotnet tools (optional)
+        run: |
+          if [ -f dotnet-tools.json ] || [ -f .config/dotnet-tools.json ]; then
+            dotnet tool restore
+          else
+            echo "No dotnet tool manifest found. Skipping restore."
+          fi
 
       - name: Pack NuGet packages
-        run: |
-          dotnet pack src/ImpellerSharp.Native/ImpellerSharp.Native.csproj -c Release -o artifacts/nuget
-          dotnet pack src/ImpellerSharp.Interop/ImpellerSharp.Interop.csproj -c Release -o artifacts/nuget
-          dotnet pack src/ImpellerSharp.Avalonia/ImpellerSharp.Avalonia.csproj -c Release -o artifacts/nuget
-          dotnet pack src/ImpellerSharp.Avalonia.Mac/ImpellerSharp.Avalonia.Mac.csproj -c Release -o artifacts/nuget
-          dotnet pack src/ImpellerSharp.Avalonia.Windows/ImpellerSharp.Avalonia.Windows.csproj -c Release -o artifacts/nuget
-          dotnet pack src/ImpellerSharp.Avalonia.Linux/ImpellerSharp.Avalonia.Linux.csproj -c Release -o artifacts/nuget
+        run: python3 build/managed/package_all.py --configuration Release
 
-      - name: Upload NuGet packages
+      - name: Smoke test packaged binaries
+        run: |
+          if [ -d artifacts/rive/linux-x64/native ]; then
+            python3 build/rive/smoke_test.py artifacts/rive/linux-x64/native --rid linux-x64
+          fi
+          dotnet new console --force -n release-smoke
+          pushd release-smoke
+          cat <<'CS' > Program.cs
+using System;
+using ImpellerSharp.Interop;
+
+Console.WriteLine("Release smoke test OK.");
+CS
+          dotnet add package ImpellerSharp.Interop --source ../artifacts/nuget --no-restore
+          dotnet restore --source ../artifacts/nuget
+          dotnet build -c Release --no-restore
+          popd
+          rm -rf release-smoke
+
+      - name: Upload NuGet artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: release-nugets
-          path: artifacts/nuget
+          name: release-nuget-packages
+          path: artifacts/nuget/**
+
+      - name: Archive native bundles
+        run: |
+          tar -czf artifacts/native-impeller.tar.gz -C artifacts/native .
+          tar -czf artifacts/native-rive.tar.gz -C artifacts/rive .
+
+      - name: Bundle symbol files
+        run: |
+          find artifacts -type f \( -name "*.pdb" -o -name "*.dSYM" -o -name "*.sym" \) > symbols.txt
+          if [ -s symbols.txt ]; then
+            zip -@ artifacts/symbols.zip < symbols.txt
+            echo "symbol_bundle=artifacts/symbols.zip" >> $GITHUB_ENV
+          else
+            echo "No symbol files found; skipping bundle."
+          fi
+          rm -f symbols.txt
+
+      - name: Upload symbol artifacts
+        if: env.symbol_bundle != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-symbols
+          path: ${{ env.symbol_bundle }}
 
       - name: Publish to NuGet
+        if: secrets.NUGET_API_KEY != ''
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
-          if [ -z "$NUGET_API_KEY" ]; then
-            echo "NUGET_API_KEY not provided. Skipping publish.";
-            exit 0;
-          fi
           for pkg in artifacts/nuget/*.nupkg; do
             dotnet nuget push "$pkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate;
           done
@@ -149,6 +251,12 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
-          files: artifacts/nuget/*.nupkg
+          files: |
+            artifacts/nuget/*.nupkg
+            artifacts/nuget/manifest.json
+            artifacts/native-impeller.tar.gz
+            artifacts/native-rive.tar.gz
+            artifacts/symbols.zip
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

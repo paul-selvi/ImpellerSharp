@@ -48,16 +48,138 @@ public sealed unsafe class ImpellerDisplayListBuilderHandle : ImpellerSafeHandle
         ImpellerNative.ImpellerDisplayListBuilderRestore(handle);
     }
 
+    public void SaveLayer(in ImpellerRect bounds, ImpellerPaintHandle? paint = null, ImpellerImageFilterHandle? backdrop = null)
+    {
+        ThrowIfInvalid();
+
+        var rect = bounds;
+        var paintHandle = paint?.DangerousGetHandle() ?? nint.Zero;
+        var backdropHandle = backdrop?.DangerousGetHandle() ?? nint.Zero;
+
+        ImpellerNative.ImpellerDisplayListBuilderSaveLayer(handle, &rect, paintHandle, backdropHandle);
+    }
+
     public void Translate(float x, float y)
     {
         ThrowIfInvalid();
         ImpellerNative.ImpellerDisplayListBuilderTranslate(handle, x, y);
     }
 
+    public void Scale(float x, float y)
+    {
+        ThrowIfInvalid();
+        ImpellerNative.ImpellerDisplayListBuilderScale(handle, x, y);
+    }
+
     public void Rotate(float degrees)
     {
         ThrowIfInvalid();
         ImpellerNative.ImpellerDisplayListBuilderRotate(handle, degrees);
+    }
+
+    public void Transform(in ImpellerMatrix transform)
+    {
+        ThrowIfInvalid();
+        var matrix = transform;
+        ImpellerNative.ImpellerDisplayListBuilderTransform(handle, &matrix);
+    }
+
+    public void SetTransform(in ImpellerMatrix transform)
+    {
+        ThrowIfInvalid();
+        var matrix = transform;
+        ImpellerNative.ImpellerDisplayListBuilderSetTransform(handle, &matrix);
+    }
+
+    public ImpellerMatrix GetTransform()
+    {
+        ThrowIfInvalid();
+        ImpellerMatrix matrix = default;
+        ImpellerNative.ImpellerDisplayListBuilderGetTransform(handle, &matrix);
+        return matrix;
+    }
+
+    public void ResetTransform()
+    {
+        ThrowIfInvalid();
+        ImpellerNative.ImpellerDisplayListBuilderResetTransform(handle);
+    }
+
+    public uint GetSaveCount()
+    {
+        ThrowIfInvalid();
+        return ImpellerNative.ImpellerDisplayListBuilderGetSaveCount(handle);
+    }
+
+    public void RestoreToCount(uint count)
+    {
+        ThrowIfInvalid();
+        ImpellerNative.ImpellerDisplayListBuilderRestoreToCount(handle, count);
+    }
+
+    public void ClipRect(in ImpellerRect rect, ImpellerClipOperation operation)
+    {
+        ThrowIfInvalid();
+        var value = rect;
+        ImpellerNative.ImpellerDisplayListBuilderClipRect(handle, &value, operation);
+    }
+
+    public void ClipOval(in ImpellerRect bounds, ImpellerClipOperation operation)
+    {
+        ThrowIfInvalid();
+        var rect = bounds;
+        ImpellerNative.ImpellerDisplayListBuilderClipOval(handle, &rect, operation);
+    }
+
+    public void ClipRoundedRect(in ImpellerRect rect, in ImpellerRoundingRadii radii, ImpellerClipOperation operation)
+    {
+        ThrowIfInvalid();
+        var r = rect;
+        var corner = radii;
+        ImpellerNative.ImpellerDisplayListBuilderClipRoundedRect(handle, &r, &corner, operation);
+    }
+
+    public void ClipPath(ImpellerPathHandle path, ImpellerClipOperation operation)
+    {
+        if (path is null || path.IsInvalid)
+        {
+            throw new ArgumentNullException(nameof(path));
+        }
+
+        ThrowIfInvalid();
+        ImpellerNative.ImpellerDisplayListBuilderClipPath(handle, path.DangerousGetHandle(), operation);
+    }
+
+    public void DrawLine(in ImpellerPoint from, in ImpellerPoint to, ImpellerPaintHandle paint)
+    {
+        if (paint is null || paint.IsInvalid)
+        {
+            throw new ArgumentNullException(nameof(paint));
+        }
+
+        ThrowIfInvalid();
+        var start = from;
+        var end = to;
+        ImpellerNative.ImpellerDisplayListBuilderDrawLine(handle, &start, &end, paint.DangerousGetHandle());
+    }
+
+    public void DrawDashedLine(in ImpellerPoint from, in ImpellerPoint to, float onLength, float offLength, ImpellerPaintHandle paint)
+    {
+        if (paint is null || paint.IsInvalid)
+        {
+            throw new ArgumentNullException(nameof(paint));
+        }
+
+        ThrowIfInvalid();
+        var start = from;
+        var end = to;
+        ImpellerNative.ImpellerDisplayListBuilderDrawDashedLine(
+            handle,
+            &start,
+            &end,
+            onLength,
+            offLength,
+            paint.DangerousGetHandle());
     }
 
     public void DrawRect(in ImpellerRect rect, ImpellerPaintHandle paint)

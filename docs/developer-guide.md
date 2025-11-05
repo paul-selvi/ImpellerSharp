@@ -50,6 +50,7 @@ using var texture = context.CreateTexture(descriptor, pixels);
 
 ## 5. Diagnostics & Profiling
 - `ImpellerDiagnostics` forwards context creation, texture uploads, and draw submissions to `ImpellerEventSource` and an `ActivitySource`. Subscribe via `EventListener` or `DiagnosticSource`.
+- Enable strict guardrails via `AppContext.SetSwitch("ImpellerSharp.Interop.StrictMode", true)` or `IMPELLER_INTEROP_STRICT=1`. The strict configuration (see `ImpellerInteropOptions`) validates texture payload sizes and throws immediately on surface draw failures—ideal for catching misuse during development.
 - For managed allocation profiling, follow the steps in `docs/benchmarking-plan.md` (dotnet-trace, dotnet-counters).
 - Integrate BenchmarkDotNet scenarios (`BL-DrawRect`, `TextureUpload`) to detect regressions.
 
@@ -57,4 +58,5 @@ using var texture = context.CreateTexture(descriptor, pixels);
 - **Version mismatch**: Ensure `ImpellerContextHandle.Create*` passes `ImpellerNative.ImpellerGetVersion()`.
 - **Null returns**: Check that native binaries are discoverable and that required backends (Metal/Vulkan) are present.
 - **Threading violations**: Avoid using surfaces/command buffers after disposal; check logs for ActivitySource events with failure status.
+- **Strict mode exceptions**: `ImpellerInteropOptions` may throw if resources are misused (e.g., undersized texture data). Disable strict mode in production or update callsites to satisfy the stricter contracts.
 - **Dynamic library load failures**: On macOS, configure `DYLD_LIBRARY_PATH` or embed `libimpeller.dylib` via `rpath`. On Linux/Windows (future), use RID assets in NuGet packaging.

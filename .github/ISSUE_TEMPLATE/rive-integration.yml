@@ -1,0 +1,26 @@
+name: Rive Integration Checklist
+description: Track progress for Rive native integration tasks.
+title: "Rive integration tracking - <milestone>"
+labels: ["tracking", "rive"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this issue to monitor the Rive integration plan. Check off items as they land.
+  - type: checkboxes
+    id: workstreams
+    attributes:
+      label: Workstream status
+      options:
+        - label: Workstream A – Native build tooling complete
+        - label: Workstream B – Packaging scripts and helpers complete
+        - label: Workstream C – CI coverage (native + managed + packaging)
+        - label: Workstream D – Release automation
+        - label: Workstream E – README modernization
+        - label: Workstream F – Tracking & governance
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes / next actions
+      placeholder: Optional notes, blockers, or follow-up tasks.
+      render: markdown

@@ -33,6 +33,63 @@ public sealed class ImpellerParagraphHandle : ImpellerSafeHandle
         return ImpellerNative.ImpellerParagraphGetHeight(handle);
     }
 
+    public float GetMaxIntrinsicWidth()
+    {
+        ThrowIfInvalid();
+        return ImpellerNative.ImpellerParagraphGetMaxIntrinsicWidth(handle);
+    }
+
+    public float GetIdeographicBaseline()
+    {
+        ThrowIfInvalid();
+        return ImpellerNative.ImpellerParagraphGetIdeographicBaseline(handle);
+    }
+
+    public float GetAlphabeticBaseline()
+    {
+        ThrowIfInvalid();
+        return ImpellerNative.ImpellerParagraphGetAlphabeticBaseline(handle);
+    }
+
+    public uint GetLineCount()
+    {
+        ThrowIfInvalid();
+        return ImpellerNative.ImpellerParagraphGetLineCount(handle);
+    }
+
+    public ImpellerRange GetWordBoundary(ulong codeUnitIndex)
+    {
+        ThrowIfInvalid();
+        ImpellerRange range = default;
+        unsafe
+        {
+            ImpellerNative.ImpellerParagraphGetWordBoundary(handle, (nuint)codeUnitIndex, &range);
+        }
+
+        return range;
+    }
+
+    public ImpellerLineMetricsHandle? GetLineMetrics()
+    {
+        ThrowIfInvalid();
+        var native = ImpellerNative.ImpellerParagraphGetLineMetrics(handle);
+        return ImpellerLineMetricsHandle.FromOwned(native);
+    }
+
+    public ImpellerGlyphInfoHandle? CreateGlyphInfoAtCodeUnitIndex(ulong codeUnitIndex)
+    {
+        ThrowIfInvalid();
+        var native = ImpellerNative.ImpellerParagraphCreateGlyphInfoAtCodeUnitIndexNew(handle, (nuint)codeUnitIndex);
+        return ImpellerGlyphInfoHandle.FromOwned(native);
+    }
+
+    public ImpellerGlyphInfoHandle? CreateGlyphInfoAtParagraphCoordinates(double x, double y)
+    {
+        ThrowIfInvalid();
+        var native = ImpellerNative.ImpellerParagraphCreateGlyphInfoAtParagraphCoordinatesNew(handle, x, y);
+        return ImpellerGlyphInfoHandle.FromOwned(native);
+    }
+
     protected override bool ReleaseHandle()
     {
         ImpellerNative.ImpellerParagraphRelease(handle);

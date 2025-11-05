@@ -4,8 +4,27 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Silk.NET.GLFW" Version="2.21.0" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\ImpellerSharp.Interop\ImpellerSharp.Interop.csproj" />
   </ItemGroup>
+  <Target Name="CopyImpellerNativeBinaries" AfterTargets="Build">
+    <ItemGroup>
+      <ImpellerNativeFiles Include="$(MSBuildThisFileDirectory)..\..\src\ImpellerSharp.Native\bin\$(Configuration)\net8.0\runtimes\**\*.*" />
+    </ItemGroup>
+    <ItemGroup Condition="'@(ImpellerNativeFiles)' == ''">
+      <ImpellerNativeFiles Include="$(MSBuildThisFileDirectory)..\..\src\ImpellerSharp.Native\bin\Debug\net8.0\runtimes\**\*.*" />
+    </ItemGroup>
+    <ItemGroup Condition="'@(ImpellerNativeFiles)' != ''">
+      <ImpellerNativeDest Include="@(ImpellerNativeFiles->'$(MSBuildProjectDirectory)/bin/$(Configuration)/net8.0/runtimes/%(RecursiveDir)%(Filename)%(Extension)')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ImpellerNativeFiles)"
+          DestinationFiles="@(ImpellerNativeDest)"
+          SkipUnchangedFiles="true"
+          Condition="'@(ImpellerNativeFiles)' != ''" />
+  </Target>
 </Project>

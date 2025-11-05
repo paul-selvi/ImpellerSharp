@@ -67,4 +67,14 @@ internal static partial class ImpellerNative
         ImpellerTileMode verticalTileMode,
         ImpellerTextureSampling sampling,
         ImpellerMatrix* transform);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerColorSourceCreateFragmentProgramNew")]
+    [SuppressGCTransition]
+    internal static unsafe partial nint ImpellerColorSourceCreateFragmentProgramNew(
+        nint context,
+        nint fragmentProgram,
+        nint* samplers,
+        nuint samplersCount,
+        byte* data,
+        nuint dataLength);
 }

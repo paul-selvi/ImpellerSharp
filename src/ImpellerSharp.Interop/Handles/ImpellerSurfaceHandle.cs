@@ -143,6 +143,10 @@ public sealed unsafe class ImpellerSurfaceHandle : ImpellerSafeHandle
         using var activity = ImpellerDiagnostics.ActivitySource.StartActivity("ImpellerSurface.DrawDisplayList");
         var success = ImpellerCommandPointers.SurfaceDrawDisplayList(handle, dlHandle) != 0;
         ImpellerDiagnostics.SurfaceDrawDisplayList(success);
+        if (!success && ImpellerInteropOptions.Configuration.StrictMode)
+        {
+            throw new ImpellerInteropException("ImpellerSurfaceDrawDisplayList returned failure in strict mode.");
+        }
         return success;
     }
 

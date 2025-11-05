@@ -70,6 +70,39 @@ public sealed unsafe class ImpellerPaintHandle : ImpellerSafeHandle
         ImpellerNative.ImpellerPaintSetColorSource(handle, native);
     }
 
+    public void SetColorFilter(ImpellerColorFilterHandle colorFilter)
+    {
+        if (colorFilter is null)
+        {
+            throw new ArgumentNullException(nameof(colorFilter));
+        }
+
+        ThrowIfInvalid();
+        ImpellerNative.ImpellerPaintSetColorFilter(handle, colorFilter.DangerousGetHandle());
+    }
+
+    public void SetImageFilter(ImpellerImageFilterHandle imageFilter)
+    {
+        if (imageFilter is null)
+        {
+            throw new ArgumentNullException(nameof(imageFilter));
+        }
+
+        ThrowIfInvalid();
+        ImpellerNative.ImpellerPaintSetImageFilter(handle, imageFilter.DangerousGetHandle());
+    }
+
+    public void SetMaskFilter(ImpellerMaskFilterHandle maskFilter)
+    {
+        if (maskFilter is null)
+        {
+            throw new ArgumentNullException(nameof(maskFilter));
+        }
+
+        ThrowIfInvalid();
+        ImpellerNative.ImpellerPaintSetMaskFilter(handle, maskFilter.DangerousGetHandle());
+    }
+
     protected override bool ReleaseHandle()
     {
         ImpellerNative.ImpellerPaintRelease(handle);

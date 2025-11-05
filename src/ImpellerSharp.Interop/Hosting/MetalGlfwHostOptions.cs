@@ -23,6 +23,12 @@ public sealed class MetalGlfwHostOptions
     public int Height { get; set; } = 720;
 
     /// <summary>
+    /// Gets or sets a value indicating whether the window should be visible.
+    /// Defaults to <c>true</c>.
+    /// </summary>
+    public bool Visible { get; set; } = true;
+
+    /// <summary>
     /// Gets or sets a callback invoked when GLFW reports an error.
     /// Defaults to writing to <see cref="Console.Error"/>.
     /// </summary>

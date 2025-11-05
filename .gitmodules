@@ -4,3 +4,6 @@
 [submodule "extern/depot_tools"]
 	path = extern/depot_tools
 	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
+[submodule "extern/rive"]
+	path = extern/rive
+	url = https://github.com/rive-app/rive-cpp.git

@@ -43,4 +43,16 @@ internal static partial class ImpellerNative
     [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPaintSetColorSource")]
     [SuppressGCTransition]
     internal static partial void ImpellerPaintSetColorSource(nint paint, nint colorSource);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPaintSetColorFilter")]
+    [SuppressGCTransition]
+    internal static partial void ImpellerPaintSetColorFilter(nint paint, nint colorFilter);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPaintSetImageFilter")]
+    [SuppressGCTransition]
+    internal static partial void ImpellerPaintSetImageFilter(nint paint, nint imageFilter);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPaintSetMaskFilter")]
+    [SuppressGCTransition]
+    internal static partial void ImpellerPaintSetMaskFilter(nint paint, nint maskFilter);
 }

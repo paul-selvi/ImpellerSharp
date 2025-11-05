@@ -5,13 +5,41 @@ namespace ImpellerSharp.Samples.BasicShapes;
 
 internal static partial class Program
 {
-    private static void Main()
+    private static void Main(string[] args)
     {
         Console.WriteLine("Impeller BasicShapes sample bootstrap");
 
         try
         {
-            RunPlatformSample();
+            SampleOptions options;
+            try
+            {
+                options = SampleOptions.Parse(args);
+            }
+            catch (Exception parseEx)
+            {
+                Console.Error.WriteLine(parseEx.Message);
+                SampleOptions.PrintUsage();
+                return;
+            }
+
+            if (options.Headless)
+            {
+                if (!HeadlessRunner.Run(options))
+                {
+                    Environment.ExitCode = 1;
+                }
+                return;
+            }
+
+            if (!OperatingSystem.IsMacOS())
+            {
+                Console.Error.WriteLine("Interactive mode is currently only implemented for macOS. Use --headless for golden exports.");
+                Environment.ExitCode = 1;
+                return;
+            }
+
+            RunPlatformSample(options);
         }
         catch (ImpellerInteropException ex)
         {
@@ -23,5 +51,5 @@ internal static partial class Program
         }
     }
 
-    static partial void RunPlatformSample();
+    static partial void RunPlatformSample(SampleOptions options);
 }

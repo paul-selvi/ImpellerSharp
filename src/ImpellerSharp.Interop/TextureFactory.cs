@@ -25,6 +25,15 @@ public static unsafe class TextureFactory
             throw new ArgumentException("Texture data must not be empty.", nameof(pixelData));
         }
 
+        if (ImpellerInteropOptions.Configuration.StrictMode)
+        {
+            var expectedBytes = checked((ulong)descriptor.Size.Width * (ulong)descriptor.Size.Height * 4UL);
+            if ((ulong)pixelData.Length < expectedBytes)
+            {
+                throw new ImpellerInteropException($"Texture data length ({pixelData.Length}) is smaller than expected for descriptor ({expectedBytes}).");
+            }
+        }
+
         var upload = new PinnedTextureUpload(pixelData);
         var userDataHandle = GCHandle.Alloc(upload, GCHandleType.Normal);
         var handoffToNative = false;

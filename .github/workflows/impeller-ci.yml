@@ -70,6 +70,11 @@ jobs:
         with:
           name: ${{ matrix.native.artifact }}
           path: native/${{ matrix.native.artifact }}
+      - name: Stage Linux native binaries
+        if: contains(matrix.native.artifact, 'linux')
+        run: |
+          mkdir -p native/staging/linux
+          find native/${{ matrix.native.artifact }} -type f -name '*.so' -exec cp {} native/staging/linux/ \;
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -78,18 +83,71 @@ jobs:
         run: dotnet build src/ImpellerSharp.Interop -c $BUILD_CONFIGURATION
       - name: Test
         run: dotnet test src/ImpellerSharp.Interop -c $BUILD_CONFIGURATION --no-build
+      - name: Run benchmarks (smoke)
+        if: contains(matrix.native.artifact, 'linux')
+        env:
+          LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}:${{ github.workspace }}/native/staging/linux
+        run: dotnet run --project benchmarks/ImpellerSharp.Benchmarks/ImpellerSharp.Benchmarks.csproj -c $BUILD_CONFIGURATION -- --filter '*DisplayList*'
+      - name: Export BasicShapes golden digests
+        if: contains(matrix.native.artifact, 'linux')
+        env:
+          BACKEND: vulkan
+          CONFIGURATION: $BUILD_CONFIGURATION
+        run: build/scripts/export_basicshapes_golden.sh
+      - name: Collect allocation trace (TextureUploadBenchmark)
+        if: contains(matrix.native.artifact, 'linux')
+        env:
+          CONFIGURATION: $BUILD_CONFIGURATION
+        run: build/scripts/collect_allocations.sh
+      - name: Render benchmark dashboard
+        if: contains(matrix.native.artifact, 'linux')
+        run: python3 build/scripts/render_benchmark_dashboard.py
+      - name: Upload benchmark artifacts
+        if: contains(matrix.native.artifact, 'linux')
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmarks-${{ matrix.native.artifact }}
+          path: benchmarks/ImpellerSharp.Benchmarks/bin/$BUILD_CONFIGURATION/net8.0/BenchmarkArtifacts
+      - name: Upload BasicShapes golden digests
+        if: contains(matrix.native.artifact, 'linux') && hashFiles('artifacts/golden/basicshapes/*.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-basicshapes-${{ matrix.native.artifact }}
+          path: artifacts/golden/basicshapes/*.json
+      - name: Upload allocation traces
+        if: contains(matrix.native.artifact, 'linux') && hashFiles('artifacts/traces/*') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: traces-${{ matrix.native.artifact }}
+          path: artifacts/traces/*
+      - name: Upload benchmark dashboard
+        if: contains(matrix.native.artifact, 'linux') && hashFiles('artifacts/benchmarks/dashboard.md') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-dashboard-${{ matrix.native.artifact }}
+          path: artifacts/benchmarks/dashboard.md
 
   package:
     name: Package
     runs-on: ubuntu-22.04
     needs: managed-build
+    env:
+      NUGET_SOURCE: ${{ vars.NUGET_SOURCE }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Download native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: impeller-native-*
+          path: artifacts/native
+          merge-multiple: true
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Stage native assets
+        run: python3 build/managed/stage_native_assets.py --configuration $BUILD_CONFIGURATION
       - name: Pack
         run: dotnet pack src/ImpellerSharp.Interop -c $BUILD_CONFIGURATION -o artifacts
       - name: Upload package
@@ -97,3 +155,8 @@ jobs:
         with:
           name: impeller-nuget
           path: artifacts/*.nupkg
+      - name: Publish package
+        if: github.event_name == 'push' && env.NUGET_SOURCE != '' && secrets.NUGET_API_KEY != ''
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: dotnet nuget push artifacts/*.nupkg --source "$NUGET_SOURCE" --api-key "$NUGET_API_KEY" --skip-duplicate
