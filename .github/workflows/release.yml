@@ -80,77 +80,12 @@ jobs:
           name: release-native-impeller-${{ matrix.os }}
           path: artifacts/native/**
 
-  native_rive:
-    name: Build Rive native (${{ matrix.os }})
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos
-            runner: macos-latest
-            platform: macos
-            arch: arm64
-          - os: linux
-            runner: ubuntu-22.04
-            platform: linux
-            arch: x64
-          - os: windows
-            runner: windows-latest
-            platform: windows
-            arch: x64
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Install dependencies (macOS)
-        if: matrix.os == 'macos'
-        run: |
-          brew update
-          brew install cmake ninja python@3.11
-        shell: bash
-      - name: Install dependencies (Linux)
-        if: matrix.os == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3 python3-pip ninja-build cmake build-essential
-      - name: Install dependencies (Windows)
-        if: matrix.os == 'windows'
-        run: |
-          choco install -y ninja cmake python --no-progress
-      - name: Cache Rive build
-        uses: actions/cache@v4
-        with:
-          path: extern/rive/out
-          key: release-rive-${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('build/rive/build_rive.py') }}
-          restore-keys: |
-            release-rive-${{ runner.os }}-${{ matrix.arch }}-
-      - name: Build Rive (Unix)
-        if: matrix.os != 'windows'
-        run: >
-          python3 build/rive/build_rive.py
-          --platform ${{ matrix.platform }}
-          --arch ${{ matrix.arch }}
-          --configuration Release
-      - name: Build Rive (Windows)
-        if: matrix.os == 'windows'
-        run: >
-          python build/rive/build_rive.py
-          --platform ${{ matrix.platform }}
-          --arch ${{ matrix.arch }}
-          --configuration Release
-      - name: Upload Rive artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-native-rive-${{ matrix.os }}
-          path: artifacts/rive/**
 
   package:
     name: Package & Publish
     runs-on: ubuntu-22.04
     needs:
       - native_impeller
-      - native_rive
 
     steps:
       - uses: actions/checkout@v4
@@ -162,13 +97,6 @@ jobs:
         with:
           pattern: release-native-impeller-*
           path: artifacts/native
-          merge-multiple: true
-
-      - name: Download Rive artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: release-native-rive-*
-          path: artifacts/rive
           merge-multiple: true
 
       - name: Stage native assets
@@ -192,9 +120,6 @@ jobs:
 
       - name: Smoke test packaged binaries
         run: |
-          if [ -d artifacts/rive/linux-x64/native ]; then
-            python3 build/rive/smoke_test.py artifacts/rive/linux-x64/native --rid linux-x64
-          fi
           dotnet new console --force -n release-smoke
           pushd release-smoke
           printf "using System;\nusing ImpellerSharp.Interop;\n\nConsole.WriteLine(\"Release smoke test OK.\");\n" > Program.cs
@@ -213,7 +138,6 @@ jobs:
       - name: Archive native bundles
         run: |
           tar -czf artifacts/native-impeller.tar.gz -C artifacts/native .
-          tar -czf artifacts/native-rive.tar.gz -C artifacts/rive .
 
       - name: Bundle symbol files
         run: |
@@ -250,7 +174,6 @@ jobs:
             artifacts/nuget/*.nupkg
             artifacts/nuget/manifest.json
             artifacts/native-impeller.tar.gz
-            artifacts/native-rive.tar.gz
             artifacts/symbols.zip
           generate_release_notes: true
         env:

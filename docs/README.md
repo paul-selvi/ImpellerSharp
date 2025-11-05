@@ -17,5 +17,3 @@ This directory contains planning and reference material for ImpellerSharp.
 - `developer-docs-outline.md` – Structure for the developer guide.
 - `developer-guide.md` – current consolidated guide.
 - `samples/AvaloniaImpellerApp` – Avalonia sample using NuGet packages (see README for run instructions).
-
-- [Rive Integration Status](rive-status.md)

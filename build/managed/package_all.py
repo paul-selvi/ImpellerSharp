@@ -41,30 +41,22 @@ def ensure_native_artifacts(
     repo_root: Path,
     rids: Iterable[str],
 ) -> dict[str, dict[str, list[str]]]:
-    """Ensure Impeller and Rive artifacts exist for each RID."""
+    """Ensure Impeller artifacts exist for each RID."""
     artifacts_root = repo_root / "artifacts"
     impeller_root = artifacts_root / "native"
-    rive_root = artifacts_root / "rive"
     summary: dict[str, dict[str, list[str]]] = {}
 
     missing: list[str] = []
     for rid in rids:
         summary[rid] = {}
         imp_path = impeller_root / rid / "native"
-        rive_path = rive_root / rid / "native"
 
         imp_files = _file_listing(imp_path)
-        rive_files = _file_listing(rive_path)
 
         if not imp_files:
             missing.append(f"Impeller artifacts missing for {rid} under {imp_path}")
         else:
             summary[rid]["impeller"] = imp_files
-
-        if not rive_files:
-            missing.append(f"Rive artifacts missing for {rid} under {rive_path}")
-        else:
-            summary[rid]["rive"] = rive_files
 
     if missing:
         raise RuntimeError("\n".join(missing))

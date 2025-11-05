@@ -31,6 +31,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Add depot_tools to PATH
+        run: echo "${{ github.workspace }}/extern/depot_tools" >> $GITHUB_PATH
       - name: Install dependencies
         run: |
           if [[ "${{ matrix.os }}" == macos* ]]; then
@@ -40,18 +42,37 @@ jobs:
             sudo apt-get install -y ninja-build clang
           fi
       - name: Sync dependencies
-        run: gclient sync
+        working-directory: extern/flutter
+        run: |
+          if [ ! -f .gclient ]; then
+            remote=$(git remote get-url origin 2>/dev/null || echo https://github.com/flutter/flutter.git)
+            cat > .gclient <<EOF
+solutions = [
+  {
+    "custom_deps": {},
+    "deps_file": "DEPS",
+    "managed": False,
+    "name": ".",
+    "safesync_url": "",
+    "url": "$remote",
+  },
+]
+EOF
+          fi
+          gclient sync
       - name: Generate GN files
+        working-directory: extern/flutter
         run: ./engine/src/flutter/tools/gn --unoptimized --runtime-mode debug --${{ matrix.target_os }} --target-dir impeller_host_debug --${{ matrix.target_os }}-cpu ${{ matrix.target_cpu }}
       - name: Build Impeller
+        working-directory: extern/flutter
         run: ninja -C engine/src/out/impeller_host_debug flutter/impeller:impeller
       - name: Upload native artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: |
-            engine/src/out/impeller_host_debug/impeller.h
-            engine/src/out/impeller_host_debug/**/*impeller*.{dylib,so,dll}
+            extern/flutter/engine/src/out/impeller_host_debug/impeller.h
+            extern/flutter/engine/src/out/impeller_host_debug/**/*impeller*.{dylib,so,dll}
 
   managed-build:
     name: Managed Build & Test

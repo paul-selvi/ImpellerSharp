@@ -171,7 +171,7 @@ This plan distills the Impeller architecture and tooling documented in `extern/f
   - Highlights priority environments (macOS Metal) and stretch goals (Unity).
 
 ## Deliverables & Exit Criteria
-- README modernization landed; follow-up items: diagrams showing Impeller/Rive layering and CI badges once artwork is ready.
+- README modernization landed; follow-up items: diagrams showing Impeller layering and CI badges once artwork is ready.
 
 - Reproducible build artifacts for Impeller standalone binaries aligned with selected backends.
 - Stable C ABI documented with versioning policy and conformance tests.

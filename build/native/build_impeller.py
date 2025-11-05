@@ -35,7 +35,7 @@ def normalize_arch(value: str | None) -> str:
     if value is None or value == "":
         value = platform.machine()
     value = value.lower()
-    if value in {"x86_64", "amd64"}:
+    if value in {"x86_64", "amd64", "x64"}:
         return "x64"
     if value in {"aarch64", "arm64"}:
         return "arm64"
@@ -67,11 +67,44 @@ def gclient_env(repo_root: Path) -> dict[str, str]:
     return env
 
 
+def ensure_gclient_config(flutter_root: Path) -> None:
+    """Ensure a .gclient config exists so gclient sync succeeds."""
+    config_path = flutter_root / ".gclient"
+    if config_path.exists():
+        return
+    try:
+        remote_url = (
+            subprocess.check_output(
+                ["git", "remote", "get-url", "origin"],
+                cwd=flutter_root,
+            )
+            .decode("utf-8")
+            .strip()
+        )
+    except subprocess.CalledProcessError:
+        remote_url = "https://github.com/flutter/flutter.git"
+    if not remote_url:
+        remote_url = "https://github.com/flutter/flutter.git"
+    config_contents = f"""solutions = [
+  {{
+    "custom_deps": {{}},
+    "deps_file": "DEPS",
+    "managed": False,
+    "name": ".",
+    "safesync_url": "",
+    "url": "{remote_url}",
+  }},
+]
+"""
+    config_path.write_text(config_contents)
+
+
 def run_gclient_sync(flutter_root: Path, repo_root: Path) -> None:
     """Ensure the Flutter checkout is hydrated."""
     env = gclient_env(repo_root)
     if shutil.which("gclient", path=env["PATH"]) is None:
         raise RuntimeError("gclient not found. Ensure depot_tools submodule is present.")
+    ensure_gclient_config(flutter_root)
     run(["gclient", "sync"], cwd=flutter_root, env=env)
 
 

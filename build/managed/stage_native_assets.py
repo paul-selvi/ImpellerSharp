@@ -28,7 +28,6 @@ def copy_tree(src: Path, dest: Path) -> list[str]:
 
 def stage_artifacts(artifacts_root: Path, configuration: str) -> None:
     native_root = artifacts_root / 'native'
-    rive_root = artifacts_root / 'rive'
 
     if not native_root.exists():
         raise RuntimeError(f'Impeller artifacts not found at {native_root}.')
@@ -48,21 +47,8 @@ def stage_artifacts(artifacts_root: Path, configuration: str) -> None:
             copied = copy_tree(native_dir, dest)
             staged += len(copied)
 
-    if rive_root.exists():
-        for rid_dir in rive_root.iterdir():
-            if not rid_dir.is_dir():
-                continue
-            rid = rid_dir.name
-            native_dir = rid_dir / 'native'
-            if not native_dir.exists():
-                continue
-            for project in MANAGED_PROJECTS:
-                dest = project / 'bin' / configuration / 'net8.0' / 'runtimes' / rid / 'native'
-                copied = copy_tree(native_dir, dest)
-                staged += len(copied)
-
     if staged == 0:
-        raise RuntimeError('No artifacts were staged. Ensure artifacts/native and artifacts/rive are populated.')
+        raise RuntimeError('No artifacts were staged. Ensure artifacts/native is populated.')
 
 
 def parse_args() -> argparse.Namespace:
