@@ -197,12 +197,7 @@ jobs:
           fi
           dotnet new console --force -n release-smoke
           pushd release-smoke
-          cat <<'CS' > Program.cs
-using System;
-using ImpellerSharp.Interop;
-
-Console.WriteLine("Release smoke test OK.");
-CS
+          printf "using System;\nusing ImpellerSharp.Interop;\n\nConsole.WriteLine(\"Release smoke test OK.\");\n" > Program.cs
           dotnet add package ImpellerSharp.Interop --source ../artifacts/nuget --no-restore
           dotnet restore --source ../artifacts/nuget
           dotnet build -c Release --no-restore
