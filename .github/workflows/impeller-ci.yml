@@ -133,6 +133,7 @@ jobs:
     needs: managed-build
     env:
       NUGET_SOURCE: ${{ vars.NUGET_SOURCE }}
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -156,7 +157,5 @@ jobs:
           name: impeller-nuget
           path: artifacts/*.nupkg
       - name: Publish package
-        if: github.event_name == 'push' && env.NUGET_SOURCE != '' && secrets.NUGET_API_KEY != ''
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        if: github.event_name == 'push' && env.NUGET_SOURCE != '' && env.NUGET_API_KEY != ''
         run: dotnet nuget push artifacts/*.nupkg --source "$NUGET_SOURCE" --api-key "$NUGET_API_KEY" --skip-duplicate
