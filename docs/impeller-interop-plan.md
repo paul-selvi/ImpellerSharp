@@ -50,7 +50,7 @@ This plan distills the Impeller architecture and tooling documented in `extern/f
      - Next: Expand strict mode to validate thread affinity and SafeHandle disposal, and expose guard-rail telemetry (e.g., via EventSource counters).  
 
 6. [ ] Milestone 6 – Tooling, packaging, and documentation  
-   - [ ] Task 6.1 – Automate GN/Ninja + .NET builds via CI scripts (GitHub Actions/Azure Pipelines) producing native binaries and NuGet packages.  
+   - [x] Task 6.1 – Automate GN/Ninja + .NET builds via CI scripts (GitHub Actions/Azure Pipelines) producing native binaries and NuGet packages.  
      - Status: `impeller-ci.yml` stages downloaded native artifacts before packing, persists benchmark outputs, and conditionally publishes NuGet packages when `NUGET_SOURCE`/`NUGET_API_KEY` are configured.  
    - [ ] Task 6.2 – Provide sample scenes demonstrating standalone Impeller usage from .NET, including MoltenVK setup guidance.  
      - Status: `samples/BasicShapes` now supports backend selection (`--backend`), headless golden exports (`--headless` + `--output`), texture streaming stressors, typography rendering, and a macOS `screencapture` pipeline; `build/scripts/export_basicshapes_golden.sh` drives scripted comparisons. MoltenVK guidance and cross-platform presentation hosts remain open.  

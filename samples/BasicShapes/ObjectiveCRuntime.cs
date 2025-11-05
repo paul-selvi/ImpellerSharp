@@ -42,6 +42,9 @@ internal static class ObjectiveCRuntime
     [DllImport(ObjCLibrary, EntryPoint = "objc_release")]
     internal static extern void Release(nint obj);
 
+    [DllImport(ObjCLibrary, EntryPoint = "objc_retain")]
+    internal static extern nint Retain(nint obj);
+
     [DllImport(ObjCLibrary, EntryPoint = "objc_autoreleasePoolPush")]
     private static extern nint AutoreleasePoolPush();
 

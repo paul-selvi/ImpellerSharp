@@ -1,5 +1,7 @@
 using System;
 using Silk.NET.GLFW;
+using System.Runtime.InteropServices;
+using System.IO;
 
 namespace ImpellerSharp.Samples.BasicShapes;
 
@@ -7,21 +9,21 @@ internal sealed unsafe class MacMetalHost : IDisposable
 {
     private readonly Glfw _glfw;
     private readonly WindowHandle* _window;
-    private readonly delegate* unmanaged[Cdecl]<WindowHandle*, nint> _getCocoaWindow;
     private readonly nint _nsWindow;
     private nint _metalLayer;
     private bool _disposed;
+    private static readonly object s_glfwLock = new();
+    private static IntPtr s_glfwLibrary;
+    private static delegate* unmanaged[Cdecl]<WindowHandle*, nint> s_cachedGetCocoaWindow;
 
     private MacMetalHost(
         Glfw glfw,
         WindowHandle* window,
-        delegate* unmanaged[Cdecl]<WindowHandle*, nint> getCocoaWindow,
         nint nsWindow,
         nint metalLayer)
     {
         _glfw = glfw;
         _window = window;
-        _getCocoaWindow = getCocoaWindow;
         _nsWindow = nsWindow;
         _metalLayer = metalLayer;
     }
@@ -46,7 +48,7 @@ internal sealed unsafe class MacMetalHost : IDisposable
             throw new InvalidOperationException("Unable to create GLFW window.");
         }
 
-        var proc = (delegate* unmanaged[Cdecl]<WindowHandle*, nint>)glfw.GetProcAddress("glfwGetCocoaWindow");
+        var proc = ResolveGetCocoaWindow();
         if (proc == null)
         {
             glfw.DestroyWindow(window);
@@ -76,7 +78,7 @@ internal sealed unsafe class MacMetalHost : IDisposable
         ObjectiveCRuntime.objc_msgSend_Void_Bool(contentView, Selectors.SetWantsLayer, true);
         ObjectiveCRuntime.objc_msgSend_Void_IntPtr(contentView, Selectors.SetLayer, metalLayer);
 
-        return new MacMetalHost(glfw, window, proc, nsWindow, metalLayer);
+        return new MacMetalHost(glfw, window, nsWindow, metalLayer);
     }
 
     public bool ShouldClose => _glfw.WindowShouldClose(_window);
@@ -102,7 +104,13 @@ internal sealed unsafe class MacMetalHost : IDisposable
 
         using var pool = ObjectiveCRuntime.PushAutoreleasePool();
         drawable = ObjectiveCRuntime.objc_msgSend_IntPtr(_metalLayer, Selectors.NextDrawable);
-        return drawable != nint.Zero;
+        if (drawable == nint.Zero)
+        {
+            return false;
+        }
+
+        ObjectiveCRuntime.Retain(drawable);
+        return true;
     }
 
     public void ReleaseDrawable(nint drawable)
@@ -193,5 +201,74 @@ internal sealed unsafe class MacMetalHost : IDisposable
         internal static readonly nint BackingScaleFactor = ObjectiveCRuntime.Selector("backingScaleFactor");
         internal static readonly nint SetDisplaySyncEnabled = ObjectiveCRuntime.Selector("setDisplaySyncEnabled:");
         internal static readonly nint WindowNumber = ObjectiveCRuntime.Selector("windowNumber");
+    }
+
+    private static delegate* unmanaged[Cdecl]<WindowHandle*, nint> ResolveGetCocoaWindow()
+    {
+        if (!OperatingSystem.IsMacOS())
+        {
+            return default;
+        }
+
+        if (s_cachedGetCocoaWindow != null)
+        {
+            return s_cachedGetCocoaWindow;
+        }
+
+        lock (s_glfwLock)
+        {
+            if (s_cachedGetCocoaWindow != null)
+            {
+                return s_cachedGetCocoaWindow;
+            }
+
+            if (!TryLoadGlfwLibrary(out var handle))
+            {
+                return default;
+            }
+
+            var export = NativeLibrary.GetExport(handle, "glfwGetCocoaWindow");
+            if (export == IntPtr.Zero)
+            {
+                return default;
+            }
+
+            s_glfwLibrary = handle;
+            s_cachedGetCocoaWindow = (delegate* unmanaged[Cdecl]<WindowHandle*, nint>)export;
+            return s_cachedGetCocoaWindow;
+        }
+    }
+
+    private static bool TryLoadGlfwLibrary(out IntPtr handle)
+    {
+        if (s_glfwLibrary != IntPtr.Zero)
+        {
+            handle = s_glfwLibrary;
+            return true;
+        }
+
+        var baseDir = AppContext.BaseDirectory;
+        var candidates = new[]
+        {
+            "libglfw.3.dylib",
+            "libglfw.dylib",
+            "glfw",
+            Path.Combine(baseDir, "libglfw.3.dylib"),
+            Path.Combine(baseDir, "runtimes", "osx-arm64", "native", "libglfw.3.dylib"),
+            Path.Combine(baseDir, "runtimes", "osx-x64", "native", "libglfw.3.dylib"),
+        };
+
+        foreach (var candidate in candidates)
+        {
+            if (NativeLibrary.TryLoad(candidate, out var loaded))
+            {
+                s_glfwLibrary = loaded;
+                handle = loaded;
+                return true;
+            }
+        }
+
+        handle = IntPtr.Zero;
+        return false;
     }
 }
