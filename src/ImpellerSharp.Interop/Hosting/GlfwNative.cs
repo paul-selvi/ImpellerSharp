@@ -1,9 +1,8 @@
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 using Silk.NET.GLFW;
 
-namespace ImpellerSharp.Samples.MotionMark;
+namespace ImpellerSharp.Interop.Hosting;
 
 internal static unsafe class GlfwNative
 {

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -10,13 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Silk.NET.GLFW" Version="2.21.0" />
     <PackageReference Include="Ultz.Native.GLFW" Version="3.4.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="..\AvaloniaImpellerApp\Rendering\IImpellerScene.cs" Link="Rendering\IImpellerScene.cs" />
-    <Compile Include="..\AvaloniaImpellerApp\Rendering\MotionMarkSimulation.cs" Link="Rendering\MotionMarkSimulation.cs" />
   </ItemGroup>
 
   <ItemGroup>

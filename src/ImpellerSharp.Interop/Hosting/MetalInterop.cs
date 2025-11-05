@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace ImpellerSharp.Samples.MotionMark;
+namespace ImpellerSharp.Interop.Hosting;
 
 internal static class MetalInterop
 {

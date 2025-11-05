@@ -80,6 +80,7 @@ def run_gn(
     platform_name: str,
     arch: str,
     configuration: str,
+    env: dict[str, str],
 ) -> Path:
     """Invoke flutter/tools/gn with the right switches."""
     engine_src = flutter_root / "engine" / "src"
@@ -112,19 +113,41 @@ def run_gn(
     else:
         raise ValueError(f"Unsupported platform '{platform_name}'.")
 
-    run(args, cwd=engine_src)
+    run(args, cwd=engine_src, env=env)
     return engine_src / "out" / target_dir_name
 
 
-def run_ninja(out_dir: Path) -> None:
+def run_ninja(out_dir: Path, env: dict[str, str]) -> None:
     """Build the Impeller target via ninja."""
-    run(["ninja", "-C", str(out_dir), "flutter/impeller:impeller"], cwd=out_dir)
+    targets = [
+        "flutter/impeller/toolkit/interop:library",
+    ]
+    run(["ninja", "-C", str(out_dir), *targets], cwd=out_dir, env=env)
 
 
-def copy_artifacts(out_dir: Path, platform_name: str, rid: str, output_root: Path) -> None:
+def copy_artifacts(
+    out_dir: Path,
+    platform_name: str,
+    rid: str,
+    output_root: Path,
+    repo_root: Path,
+    configuration: str,
+) -> None:
     """Copy the produced binaries into artifacts/native/<rid>/native."""
     native_dir = output_root / rid / "native"
+    stage_dir = (
+        repo_root
+        / "src"
+        / "ImpellerSharp.Native"
+        / "bin"
+        / configuration.capitalize()
+        / "net8.0"
+        / "runtimes"
+        / rid
+        / "native"
+    )
     native_dir.mkdir(parents=True, exist_ok=True)
+    stage_dir.mkdir(parents=True, exist_ok=True)
 
     candidates: list[str]
     if platform_name == "macos":
@@ -139,8 +162,9 @@ def copy_artifacts(out_dir: Path, platform_name: str, rid: str, output_root: Pat
     copied = False
     for pattern in candidates:
         for file in out_dir.glob(pattern):
-            shutil.copy2(file, native_dir / file.name)
-            print(f"[build_impeller] Copied {file.name} -> {native_dir / file.name}")
+            for destination in (native_dir, stage_dir):
+                shutil.copy2(file, destination / file.name)
+                print(f"[build_impeller] Copied {file.name} -> {destination / file.name}")
             copied = True
 
     if not copied:
@@ -195,12 +219,14 @@ def main() -> None:
 
     print(f"[build_impeller] Building Impeller for platform={platform_name} arch={arch} configuration={configuration}")
 
+    env = gclient_env(repo_root)
+
     if not args.skip_sync:
         run_gclient_sync(flutter_root, repo_root)
 
-    out_dir = run_gn(flutter_root, platform_name, arch, configuration)
-    run_ninja(out_dir)
-    copy_artifacts(out_dir, platform_name, rid, args.output.resolve())
+    out_dir = run_gn(flutter_root, platform_name, arch, configuration, env)
+    run_ninja(out_dir, env)
+    copy_artifacts(out_dir, platform_name, rid, args.output.resolve(), repo_root, configuration)
 
     print(f"[build_impeller] Completed build. Artifacts available under {args.output.resolve() / rid}")
 

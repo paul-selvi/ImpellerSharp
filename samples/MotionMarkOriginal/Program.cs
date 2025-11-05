@@ -1,8 +1,7 @@
 using System;
-using AvaloniaImpellerApp.Rendering;
 using ImpellerSharp.Interop.Hosting;
 
-namespace ImpellerSharp.Samples.MotionMark;
+namespace ImpellerSharp.Samples.MotionMarkOriginal;
 
 internal static class Program
 {
@@ -10,16 +9,16 @@ internal static class Program
     {
         if (!OperatingSystem.IsMacOS())
         {
-            Console.Error.WriteLine("MotionMark sample currently supports macOS Metal backends only.");
+            Console.Error.WriteLine("MotionMarkOriginal sample currently supports macOS Metal backends only.");
             return 1;
         }
 
-        using var simulation = new MotionMarkSimulation();
-        simulation.SetComplexity(9);
+        using var simulation = new OriginalMotionMarkSimulation();
+        simulation.SetComplexity(12);
 
         var options = new MetalGlfwHostOptions
         {
-            Title = "Impeller MotionMark (Metal)",
+            Title = "Impeller MotionMark Classic (Metal)",
             Width = 1280,
             Height = 720,
             ErrorLogger = message => Console.Error.WriteLine(message),

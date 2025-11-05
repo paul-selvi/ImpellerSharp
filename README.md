@@ -305,7 +305,25 @@ To run it (after ensuring `ImpellerSharp.Native` binaries are on your `PATH`/`DY
 dotnet run --project samples/MotionMark/MotionMark.csproj
 ```
 
+First stage the native assets for the Release configuration (copy your built `libimpeller` binaries into `src/ImpellerSharp.Native/bin/Release/net8.0/runtimes/...`) so the sample can load them. The helper `python3 build/native/build_impeller.py --platform macos --arch arm64 --configuration Release` will build Impeller via GN/Ninja and place the results in both that location and `artifacts/native`.
+
 The sample depends on the bundled Silk.NET GLFW runtime and currently supports macOS + Metal targets.
+
+### Sample: MotionMark Original (Metal)
+
+`samples/MotionMarkOriginal` recreates MotionMark’s classic “Multiply” scene using the same Metal host:
+
+- Builds the same spiral/side-panel grid of rectangles and progressively activates them as complexity increases.
+- Matches the benchmark’s per-frame styling by rotating each tile, modulating colour with the HSL controller, and tapering alpha by the benchmark’s distance factor.
+- Shares the reusable `MetalGlfwAppHost` infrastructure, illustrating how multiple native samples can be layered on the common hosting code.
+
+Run it with:
+
+```bash
+dotnet run --project samples/MotionMarkOriginal/MotionMarkOriginal.csproj
+```
+
+Make sure the native binaries are prepared for Release builds as noted above before launching the sample.
 
 ---
 

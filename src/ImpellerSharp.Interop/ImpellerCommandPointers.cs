@@ -1,5 +1,4 @@
 using System;
-using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -40,6 +39,8 @@ internal static unsafe class ImpellerCommandPointers
             {
                 Path.Combine(baseDirectory, "libimpeller.dylib"),
                 Path.Combine(baseDirectory, "impeller.dylib"),
+                Path.Combine(baseDirectory, "runtimes", "osx-arm64", "native", "libimpeller.dylib"),
+                Path.Combine(baseDirectory, "runtimes", "osx-x64", "native", "libimpeller.dylib"),
             };
         }
 
@@ -48,6 +49,9 @@ internal static unsafe class ImpellerCommandPointers
             return new[]
             {
                 Path.Combine(baseDirectory, "impeller.dll"),
+                Path.Combine(baseDirectory, "runtimes", "win-x64", "native", "impeller.dll"),
+                Path.Combine(baseDirectory, "runtimes", "win-x86", "native", "impeller.dll"),
+                Path.Combine(baseDirectory, "runtimes", "win-arm64", "native", "impeller.dll"),
             };
         }
 
@@ -57,6 +61,9 @@ internal static unsafe class ImpellerCommandPointers
             {
                 Path.Combine(baseDirectory, "libimpeller.so"),
                 Path.Combine(baseDirectory, "impeller.so"),
+                Path.Combine(baseDirectory, "runtimes", "linux-x64", "native", "libimpeller.so"),
+                Path.Combine(baseDirectory, "runtimes", "linux-arm", "native", "libimpeller.so"),
+                Path.Combine(baseDirectory, "runtimes", "linux-arm64", "native", "libimpeller.so"),
             };
         }
 
