@@ -6,5 +6,7 @@ public enum SceneKind
     GradientGallery,
     Typography,
     VectorPaths,
+    LayerEffects,
+    BlendModes,
     MotionMark
 }

@@ -20,6 +20,10 @@
                Tag="{x:Static local:SceneKind.Typography}" />
       <TabItem Header="Vector Paths"
                Tag="{x:Static local:SceneKind.VectorPaths}" />
+      <TabItem Header="Layer Effects"
+               Tag="{x:Static local:SceneKind.LayerEffects}" />
+      <TabItem Header="Blend Modes"
+               Tag="{x:Static local:SceneKind.BlendModes}" />
       <TabItem Header="MotionMark"
                Tag="{x:Static local:SceneKind.MotionMark}" />
     </TabControl>

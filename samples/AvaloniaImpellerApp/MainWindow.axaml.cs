@@ -35,6 +35,8 @@ public partial class MainWindow : Window
         { SceneKind.GradientGallery, new SceneInfo("Gradient Gallery", "Linear, radial, and sweep gradients mapped to device space with Impeller color sources.", false) },
         { SceneKind.Typography, new SceneInfo("Typography Showcase", "Multi-column text layout highlighting different alignments, weights, and paragraph metrics.", false) },
         { SceneKind.VectorPaths, new SceneInfo("Vector Paths", "Reusable paths with fills, strokes, transforms, and light animation to demonstrate vector rendering.", false) },
+        { SceneKind.LayerEffects, new SceneInfo("Layer Effects Gallery", "Mask filters, backdrop blur, and layered glow effects rendered entirely with Impeller.", false) },
+        { SceneKind.BlendModes, new SceneInfo("Blend Modes Lab", "Screen, multiply, and color-matrix compositing techniques combined into animated cards.", false) },
         { SceneKind.MotionMark, new SceneInfo("MotionMark Simulation", "A synthetic workload derived from MotionMark to stress-test Impeller path stroking. Adjust complexity to increase load.", true) },
     };
 
@@ -449,6 +451,8 @@ public partial class MainWindow : Window
                 using var gradientScene = new GradientGalleryScene();
                 using var typographyScene = new TypographyGalleryScene();
                 using var vectorScene = new VectorPathsGalleryScene();
+                using var layerScene = new LayerEffectsScene();
+                using var blendScene = new BlendModesScene();
                 using var motionScene = new MotionMarkSimulation();
                 IImpellerScene activeScene = ResolveScene(_scene);
                 var activeKind = _scene;
@@ -542,6 +546,8 @@ public partial class MainWindow : Window
                         SceneKind.GradientGallery => gradientScene,
                         SceneKind.Typography => typographyScene,
                         SceneKind.VectorPaths => vectorScene,
+                        SceneKind.LayerEffects => layerScene,
+                        SceneKind.BlendModes => blendScene,
                         SceneKind.MotionMark => motionScene,
                         _ => basicScene
                     };
