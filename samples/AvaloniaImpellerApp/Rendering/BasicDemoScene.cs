@@ -8,7 +8,9 @@ internal sealed class BasicDemoScene : IImpellerScene
     private readonly ImpellerPaintHandle _backgroundPaint;
     private readonly ImpellerPaintHandle _rectPaint;
     private readonly ImpellerPaintHandle _strokePaint;
-    private readonly ImpellerColorSourceHandle _gradient;
+    private ImpellerColorSourceHandle? _gradient;
+    private ImpellerPoint _gradientStart;
+    private ImpellerPoint _gradientEnd;
     private readonly ImpellerTypographyContextHandle _typography;
     private readonly ImpellerParagraphStyleHandle _paragraphStyle;
     private ImpellerParagraphHandle? _paragraph;
@@ -16,24 +18,20 @@ internal sealed class BasicDemoScene : IImpellerScene
 
     private readonly ImpellerPathHandle _starPath;
 
+    private static readonly ImpellerColor[] s_gradientColors =
+    {
+        new ImpellerColor(0.2f, 0.6f, 0.9f, 1f),
+        new ImpellerColor(0.8f, 0.2f, 0.8f, 1f),
+    };
+
+    private static readonly float[] s_gradientStops = { 0f, 1f };
+
     public BasicDemoScene()
     {
         _backgroundPaint = ImpellerPaintHandle.Create();
         _backgroundPaint.SetColor(new ImpellerColor(0.05f, 0.07f, 0.1f, 1f));
 
-        _gradient = ImpellerColorSourceHandle.CreateLinearGradient(
-            new ImpellerPoint(0f, 0f),
-            new ImpellerPoint(0f, 1f),
-            new[]
-            {
-                new ImpellerColor(0.2f, 0.6f, 0.9f, 1f),
-                new ImpellerColor(0.8f, 0.2f, 0.8f, 1f),
-            },
-            new[] { 0f, 1f },
-            ImpellerTileMode.Clamp);
-
         _rectPaint = ImpellerPaintHandle.Create();
-        _rectPaint.SetColorSource(_gradient);
 
         _strokePaint = ImpellerPaintHandle.Create();
         _strokePaint.SetDrawStyle(ImpellerDrawStyle.Stroke);
@@ -57,6 +55,7 @@ internal sealed class BasicDemoScene : IImpellerScene
         var margin = 48f;
         var rectHeight = MathF.Min(height * 0.35f, height - margin * 2f);
         var rect = new ImpellerRect(margin, margin, MathF.Max(0f, width - margin * 2f), rectHeight);
+        EnsureGradient(rect);
         builder.DrawRect(rect, _rectPaint);
         var rectBottom = rect.Y + rect.Height;
 
@@ -98,6 +97,40 @@ internal sealed class BasicDemoScene : IImpellerScene
         _paragraphWidth = targetWidth;
     }
 
+    private void EnsureGradient(in ImpellerRect rect)
+    {
+        var start = new ImpellerPoint(rect.X, rect.Y);
+        var end = new ImpellerPoint(rect.X, rect.Y + rect.Height);
+
+        if (_gradient is not null &&
+            PointsAreClose(start, _gradientStart) &&
+            PointsAreClose(end, _gradientEnd))
+        {
+            return;
+        }
+
+        var gradient = ImpellerColorSourceHandle.CreateLinearGradient(
+            start,
+            end,
+            s_gradientColors,
+            s_gradientStops,
+            ImpellerTileMode.Clamp);
+
+        _rectPaint.SetColorSource(gradient);
+
+        _gradient?.Dispose();
+        _gradient = gradient;
+        _gradientStart = start;
+        _gradientEnd = end;
+    }
+
+    private static bool PointsAreClose(in ImpellerPoint first, in ImpellerPoint second)
+    {
+        const float epsilon = 0.5f;
+        return MathF.Abs(first.X - second.X) < epsilon &&
+               MathF.Abs(first.Y - second.Y) < epsilon;
+    }
+
     private static ImpellerPathHandle CreateStarPath()
     {
         using var pathBuilder = ImpellerPathBuilderHandle.Create();
@@ -131,8 +164,9 @@ internal sealed class BasicDemoScene : IImpellerScene
         _paragraphStyle.Dispose();
         _typography.Dispose();
         _strokePaint.Dispose();
+        _rectPaint.SetColorSource(null);
+        _gradient?.Dispose();
         _rectPaint.Dispose();
-        _gradient.Dispose();
         _backgroundPaint.Dispose();
         _starPath.Dispose();
     }

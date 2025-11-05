@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -22,19 +23,42 @@ public partial class MainWindow : Window
     private ImpellerSkiaView? _skiaView;
     private Slider? _complexitySlider;
     private TextBlock? _complexityLabel;
+    private StackPanel? _motionControls;
+    private TextBlock? _sceneTitle;
+    private TextBlock? _sceneDescription;
     private TabControl? _sceneTabs;
     private SceneKind _currentScene = SceneKind.BasicDemo;
 
-    private enum SceneKind
+    private static readonly IReadOnlyDictionary<SceneKind, SceneInfo> s_sceneInfo = new Dictionary<SceneKind, SceneInfo>
     {
-        BasicDemo,
-        MotionMark
+        { SceneKind.BasicDemo, new SceneInfo("Basic Demo", "Gradient fills, stroked paths, and paragraphs combined into a single scene rendered entirely by Impeller.", false) },
+        { SceneKind.GradientGallery, new SceneInfo("Gradient Gallery", "Linear, radial, and sweep gradients mapped to device space with Impeller color sources.", false) },
+        { SceneKind.Typography, new SceneInfo("Typography Showcase", "Multi-column text layout highlighting different alignments, weights, and paragraph metrics.", false) },
+        { SceneKind.VectorPaths, new SceneInfo("Vector Paths", "Reusable paths with fills, strokes, transforms, and light animation to demonstrate vector rendering.", false) },
+        { SceneKind.MotionMark, new SceneInfo("MotionMark Simulation", "A synthetic workload derived from MotionMark to stress-test Impeller path stroking. Adjust complexity to increase load.", true) },
+    };
+
+    private readonly struct SceneInfo
+    {
+        public SceneInfo(string title, string description, bool supportsComplexity)
+        {
+            Title = title;
+            Description = description;
+            SupportsComplexity = supportsComplexity;
+        }
+
+        public string Title { get; }
+        public string Description { get; }
+        public bool SupportsComplexity { get; }
     }
 
     public MainWindow()
     {
         InitializeComponent();
 
+        _sceneTitle = this.FindControl<TextBlock>("SceneTitle");
+        _sceneDescription = this.FindControl<TextBlock>("SceneDescription");
+        _motionControls = this.FindControl<StackPanel>("MotionControls");
         if (this.FindControl<ContentControl>("RenderHost") is { } host)
         {
             if (OperatingSystem.IsMacOS())
@@ -65,6 +89,13 @@ public partial class MainWindow : Window
                 _skiaView.RenderSkia += OnRenderSkia;
                 _skiaView.DetachedFromVisualTree += ViewOnDetachedFromVisualTree;
             }
+        }
+
+        _complexitySlider = this.FindControl<Slider>("ComplexitySlider");
+        _complexityLabel = this.FindControl<TextBlock>("ComplexityValue");
+        if (_complexitySlider is not null)
+        {
+            _complexitySlider.PropertyChanged += ComplexitySliderOnPropertyChanged;
         }
 
         _sceneTabs = this.FindControl<TabControl>("SceneTabs");
@@ -114,27 +145,33 @@ public partial class MainWindow : Window
 
     private void SceneTabsOnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        var index = _sceneTabs?.SelectedIndex ?? 0;
-        UpdateScene(index == 1 ? SceneKind.MotionMark : SceneKind.BasicDemo);
+        if (_sceneTabs?.SelectedItem is TabItem tab && tab.Tag is SceneKind scene)
+        {
+            UpdateScene(scene);
+        }
     }
 
     private void UpdateScene(SceneKind scene)
     {
+        UpdateSceneMetadata(scene);
+
         if (_currentScene == scene)
         {
+            RequestFrame();
             return;
         }
 
+        var targetTab = FindTabForScene(scene);
+        if (targetTab is not null && !ReferenceEquals(_sceneTabs?.SelectedItem, targetTab))
+        {
+            _sceneTabs?.SetCurrentValue(TabControl.SelectedItemProperty, targetTab);
+        }
         _currentScene = scene;
         _impeller.SetScene(scene);
 
-        if (scene == SceneKind.MotionMark)
+        if (scene == SceneKind.MotionMark && _complexitySlider is { } slider)
         {
-            EnsureMotionControls();
-            if (_complexitySlider is { } slider)
-            {
-                ApplyComplexity(slider.Value);
-            }
+            ApplyComplexity(slider.Value);
         }
         else if (_complexityLabel is not null)
         {
@@ -144,24 +181,50 @@ public partial class MainWindow : Window
         RequestFrame();
     }
 
-    private void EnsureMotionControls()
+    private void UpdateSceneMetadata(SceneKind scene)
     {
-        if (_complexitySlider is null)
+        if (!s_sceneInfo.TryGetValue(scene, out var info))
         {
-            var slider = this.FindControl<Slider>("ComplexitySlider");
-            if (slider is not null)
-            {
-                _complexitySlider = slider;
-                slider.PropertyChanged += ComplexitySliderOnPropertyChanged;
-            }
+            return;
         }
 
-        _complexityLabel ??= this.FindControl<TextBlock>("ComplexityValue");
+        if (_sceneTitle is not null)
+        {
+            _sceneTitle.Text = info.Title;
+        }
+
+        if (_sceneDescription is not null)
+        {
+            _sceneDescription.Text = info.Description;
+        }
+
+        if (_motionControls is not null)
+        {
+            _motionControls.IsVisible = info.SupportsComplexity;
+        }
     }
 
     private void RequestFrame()
     {
         _skiaView?.InvalidateVisual();
+    }
+
+    private TabItem? FindTabForScene(SceneKind scene)
+    {
+        if (_sceneTabs is null)
+        {
+            return null;
+        }
+
+        foreach (var item in _sceneTabs.Items)
+        {
+            if (item is TabItem tab && tab.Tag is SceneKind value && value == scene)
+            {
+                return tab;
+            }
+        }
+
+        return null;
     }
 
     private void OnRenderMetal(object? sender, MetalRenderEventArgs e)
@@ -383,9 +446,12 @@ public partial class MainWindow : Window
             try
             {
                 using var basicScene = new BasicDemoScene();
+                using var gradientScene = new GradientGalleryScene();
+                using var typographyScene = new TypographyGalleryScene();
+                using var vectorScene = new VectorPathsGalleryScene();
                 using var motionScene = new MotionMarkSimulation();
-                IImpellerScene activeScene = basicScene;
-                var activeKind = SceneKind.BasicDemo;
+                IImpellerScene activeScene = ResolveScene(_scene);
+                var activeKind = _scene;
 
                 var lastWidth = 0f;
                 var lastHeight = 0f;
@@ -405,9 +471,7 @@ public partial class MainWindow : Window
                                 if (message.Scene != activeKind)
                                 {
                                     activeKind = message.Scene;
-                                    activeScene = activeKind == SceneKind.MotionMark
-                                        ? (IImpellerScene)motionScene
-                                        : basicScene;
+                                    activeScene = ResolveScene(activeKind);
                                 }
                                 rebuildRequested = true;
                                 break;
@@ -422,9 +486,7 @@ public partial class MainWindow : Window
 
                             case WorkerMessageKind.Scene:
                                 activeKind = message.Scene;
-                                activeScene = activeKind == SceneKind.MotionMark
-                                    ? (IImpellerScene)motionScene
-                                    : basicScene;
+                                activeScene = ResolveScene(activeKind);
                                 if (hasSize)
                                 {
                                     rebuildRequested = true;
@@ -472,6 +534,17 @@ public partial class MainWindow : Window
                     var displayList = builder.Build();
                     PublishDisplayList(displayList);
                 }
+
+                IImpellerScene ResolveScene(SceneKind kind) =>
+                    kind switch
+                    {
+                        SceneKind.BasicDemo => basicScene,
+                        SceneKind.GradientGallery => gradientScene,
+                        SceneKind.Typography => typographyScene,
+                        SceneKind.VectorPaths => vectorScene,
+                        SceneKind.MotionMark => motionScene,
+                        _ => basicScene
+                    };
             }
             catch (ChannelClosedException)
             {
@@ -511,7 +584,7 @@ public partial class MainWindow : Window
                 new(WorkerMessageKind.Render, width, height, 0, scene);
 
             public static WorkerMessage ForComplexity(int complexity) =>
-                new(WorkerMessageKind.Complexity, 0f, 0f, complexity, SceneKind.BasicDemo);
+                new(WorkerMessageKind.Complexity, 0f, 0f, complexity, SceneKind.MotionMark);
 
             public static WorkerMessage ForScene(SceneKind scene) =>
                 new(WorkerMessageKind.Scene, 0f, 0f, 0, scene);
