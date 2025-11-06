@@ -155,4 +155,46 @@ internal static partial class ImpellerNative
         float onLength,
         float offLength,
         nint paint);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerDisplayListBuilderDrawOval")]
+    [SuppressGCTransition]
+    internal static unsafe partial void ImpellerDisplayListBuilderDrawOval(
+        nint builder,
+        ImpellerRect* bounds,
+        nint paint);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerDisplayListBuilderDrawRoundedRect")]
+    [SuppressGCTransition]
+    internal static unsafe partial void ImpellerDisplayListBuilderDrawRoundedRect(
+        nint builder,
+        ImpellerRect* rect,
+        ImpellerRoundingRadii* radii,
+        nint paint);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerDisplayListBuilderDrawRoundedRectDifference")]
+    [SuppressGCTransition]
+    internal static unsafe partial void ImpellerDisplayListBuilderDrawRoundedRectDifference(
+        nint builder,
+        ImpellerRect* outerRect,
+        ImpellerRoundingRadii* outerRadii,
+        ImpellerRect* innerRect,
+        ImpellerRoundingRadii* innerRadii,
+        nint paint);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerDisplayListBuilderDrawDisplayList")]
+    [SuppressGCTransition]
+    internal static partial void ImpellerDisplayListBuilderDrawDisplayList(
+        nint builder,
+        nint displayList,
+        float opacity);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerDisplayListBuilderDrawShadow")]
+    [SuppressGCTransition]
+    internal static unsafe partial void ImpellerDisplayListBuilderDrawShadow(
+        nint builder,
+        nint path,
+        ImpellerColor* color,
+        float elevation,
+        [MarshalAs(UnmanagedType.I1)] bool occluderIsTransparent,
+        float devicePixelRatio);
 }

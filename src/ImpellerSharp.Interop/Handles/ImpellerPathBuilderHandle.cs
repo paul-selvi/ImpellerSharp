@@ -57,10 +57,52 @@ public sealed unsafe class ImpellerPathBuilderHandle : ImpellerSafeHandle
         ImpellerNative.ImpellerPathBuilderCubicCurveTo(handle, &c1, &c2, &end);
     }
 
+    public void AddRect(in ImpellerRect rect)
+    {
+        ThrowIfInvalid();
+        var value = rect;
+        ImpellerNative.ImpellerPathBuilderAddRect(handle, &value);
+    }
+
+    public void AddArc(in ImpellerRect ovalBounds, float startAngleDegrees, float endAngleDegrees)
+    {
+        ThrowIfInvalid();
+        var bounds = ovalBounds;
+        ImpellerNative.ImpellerPathBuilderAddArc(handle, &bounds, startAngleDegrees, endAngleDegrees);
+    }
+
+    public void AddOval(in ImpellerRect ovalBounds)
+    {
+        ThrowIfInvalid();
+        var bounds = ovalBounds;
+        ImpellerNative.ImpellerPathBuilderAddOval(handle, &bounds);
+    }
+
+    public void AddRoundedRect(in ImpellerRect rect, in ImpellerRoundingRadii radii)
+    {
+        ThrowIfInvalid();
+        var value = rect;
+        var rounding = radii;
+        ImpellerNative.ImpellerPathBuilderAddRoundedRect(handle, &value, &rounding);
+    }
+
+    public void ClosePath()
+    {
+        ThrowIfInvalid();
+        ImpellerNative.ImpellerPathBuilderClose(handle);
+    }
+
     public ImpellerPathHandle TakePath(ImpellerFillType fillType = ImpellerFillType.NonZero)
     {
         ThrowIfInvalid();
         var native = ImpellerNative.ImpellerPathBuilderTakePathNew(handle, fillType);
+        return ImpellerPathHandle.FromOwned(native);
+    }
+
+    public ImpellerPathHandle CopyPath(ImpellerFillType fillType = ImpellerFillType.NonZero)
+    {
+        ThrowIfInvalid();
+        var native = ImpellerNative.ImpellerPathBuilderCopyPathNew(handle, fillType);
         return ImpellerPathHandle.FromOwned(native);
     }
 

@@ -27,6 +27,8 @@ internal sealed class SampleOptions
 
     internal string? OutputPath { get; private set; }
 
+    internal nint? VulkanSurface { get; private set; }
+
     internal static SampleOptions Parse(string[] args)
     {
         var options = new SampleOptions();
@@ -100,6 +102,17 @@ internal sealed class SampleOptions
                 continue;
             }
 
+            if (string.Equals(arg, "--vk-surface", StringComparison.OrdinalIgnoreCase))
+            {
+                if (i + 1 >= args.Length)
+                {
+                    throw new ArgumentException("Missing value for --vk-surface.");
+                }
+
+                options.VulkanSurface = ParsePointer(args[++i]);
+                continue;
+            }
+
             if (string.Equals(arg, "--help", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(arg, "-h", StringComparison.OrdinalIgnoreCase))
             {
@@ -122,6 +135,7 @@ internal sealed class SampleOptions
         Console.WriteLine("  --capture|-c <path>                   Capture window to the provided PNG path after first frame (macOS).");
         Console.WriteLine("  --headless                            Run without a window (display lists only).");
         Console.WriteLine("  --output|-o <path>                    When headless, write scene digest JSON to this path.");
+        Console.WriteLine("  --vk-surface <pointer>                Hex/decimal VkSurfaceKHR handle for Vulkan swapchain probing (optional).");
         Console.WriteLine("  --help|-h                             Display this help.");
         Console.WriteLine();
         Console.WriteLine("Scene aliases: basic/rectangles -> rects, streaming/textures -> stream, text -> typography.");
@@ -161,5 +175,29 @@ internal sealed class SampleOptions
             "gles" => "opengles",
             _ => throw new ArgumentException($"Unsupported backend '{value}'. Choose auto, metal, vulkan, or opengles.", nameof(value)),
         };
+    }
+
+    private static nint ParsePointer(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException("Pointer value must not be empty.", nameof(value));
+        }
+
+        value = value.Trim();
+
+        if (value.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+        {
+            if (ulong.TryParse(value.AsSpan(2), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out var hex))
+            {
+                return new nint(unchecked((long)hex));
+            }
+        }
+        else if (long.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var dec))
+        {
+            return new nint(dec);
+        }
+
+        throw new ArgumentException($"Unable to parse pointer value '{value}'. Use hex (0x...) or decimal.", nameof(value));
     }
 }

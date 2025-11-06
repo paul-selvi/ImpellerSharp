@@ -40,6 +40,10 @@ internal static partial class ImpellerNative
     [SuppressGCTransition]
     internal static partial void ImpellerPaintSetStrokeWidth(nint paint, float width);
 
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPaintSetStrokeMiter")]
+    [SuppressGCTransition]
+    internal static partial void ImpellerPaintSetStrokeMiter(nint paint, float miter);
+
     [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPaintSetColorSource")]
     [SuppressGCTransition]
     internal static partial void ImpellerPaintSetColorSource(nint paint, nint colorSource);

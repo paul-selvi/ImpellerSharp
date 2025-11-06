@@ -63,6 +63,12 @@ public sealed unsafe class ImpellerPaintHandle : ImpellerSafeHandle
         ImpellerNative.ImpellerPaintSetStrokeWidth(handle, width);
     }
 
+    public void SetStrokeMiter(float miterLimit)
+    {
+        ThrowIfInvalid();
+        ImpellerNative.ImpellerPaintSetStrokeMiter(handle, miterLimit);
+    }
+
     public void SetColorSource(ImpellerColorSourceHandle? colorSource)
     {
         ThrowIfInvalid();

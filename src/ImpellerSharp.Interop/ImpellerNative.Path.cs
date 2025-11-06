@@ -11,4 +11,8 @@ internal static partial class ImpellerNative
     [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPathRelease")]
     [SuppressGCTransition]
     internal static partial void ImpellerPathRelease(nint path);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPathGetBounds")]
+    [SuppressGCTransition]
+    internal static unsafe partial void ImpellerPathGetBounds(nint path, ImpellerRect* outBounds);
 }

@@ -33,6 +33,18 @@ public sealed class ImpellerParagraphHandle : ImpellerSafeHandle
         return ImpellerNative.ImpellerParagraphGetHeight(handle);
     }
 
+    public float GetLongestLineWidth()
+    {
+        ThrowIfInvalid();
+        return ImpellerNative.ImpellerParagraphGetLongestLineWidth(handle);
+    }
+
+    public float GetMinIntrinsicWidth()
+    {
+        ThrowIfInvalid();
+        return ImpellerNative.ImpellerParagraphGetMinIntrinsicWidth(handle);
+    }
+
     public float GetMaxIntrinsicWidth()
     {
         ThrowIfInvalid();

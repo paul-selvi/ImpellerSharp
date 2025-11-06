@@ -22,7 +22,7 @@ internal static class BackendContextFactory
                         actualBackend = "metal";
                         break;
                     case "vulkan":
-                        handle = CreateVulkanContext(out actualBackend);
+                        handle = CreateVulkanContext(options, out actualBackend);
                         break;
                     default:
                         throw new NotSupportedException($"Backend '{candidate}' is not supported in headless mode.");
@@ -83,7 +83,7 @@ internal static class BackendContextFactory
         return ImpellerContextHandle.CreateMetal();
     }
 
-    private static ImpellerContextHandle CreateVulkanContext(out string resolvedBackend)
+    private static ImpellerContextHandle CreateVulkanContext(SampleOptions options, out string resolvedBackend)
     {
         if (!VulkanLoader.TryCreateSettings(out var settings, out var failure))
         {
@@ -91,6 +91,8 @@ internal static class BackendContextFactory
         }
 
         resolvedBackend = "vulkan";
-        return ImpellerContextHandle.CreateVulkan(settings);
+        var context = ImpellerContextHandle.CreateVulkan(settings);
+        VulkanSwapchainProbe.Run(context, options.VulkanSurface);
+        return context;
     }
 }

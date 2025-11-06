@@ -31,6 +31,7 @@ internal static class HeadlessRunner
             }
 
             SceneExecutionContext.Headless = true;
+            SceneExecutionContext.LastVulkanSwapchainProbe = null;
             try
             {
                 using (scene)
@@ -55,6 +56,10 @@ internal static class HeadlessRunner
                     }
 
                     Console.WriteLine($"Headless run complete. Scene={options.Scene}, Backend={backend}, Frames={frameCount}");
+                    if (!string.IsNullOrEmpty(SceneExecutionContext.LastVulkanSwapchainProbe))
+                    {
+                        Console.WriteLine($"Vulkan swapchain probe: {SceneExecutionContext.LastVulkanSwapchainProbe}");
+                    }
 
                     if (!string.IsNullOrEmpty(options.OutputPath))
                     {
@@ -66,6 +71,7 @@ internal static class HeadlessRunner
             finally
             {
                 SceneExecutionContext.Headless = false;
+                SceneExecutionContext.LastVulkanSwapchainProbe = null;
             }
         }
 
@@ -80,6 +86,7 @@ internal static class HeadlessRunner
             Backend = backend,
             GeneratedAt = DateTimeOffset.UtcNow,
             Frames = digests,
+            SwapchainProbe = SceneExecutionContext.LastVulkanSwapchainProbe,
         };
 
         var directory = Path.GetDirectoryName(path);
@@ -106,6 +113,8 @@ internal static class HeadlessRunner
         public DateTimeOffset GeneratedAt { get; init; }
 
         public IReadOnlyList<FrameDigest> Frames { get; init; } = Array.Empty<FrameDigest>();
+
+        public string? SwapchainProbe { get; init; }
     }
 
     private sealed record FrameDigest(int Frame, string Summary);

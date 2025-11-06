@@ -89,6 +89,11 @@ public sealed class ImpellerContextHandle : ImpellerSafeHandle
         return ImpellerNative.ImpellerContextGetVulkanInfo(handle, out info);
     }
 
+    public ImpellerVulkanSwapchainHandle CreateVulkanSwapchain(nint vulkanSurface)
+    {
+        return ImpellerVulkanSwapchainHandle.Create(this, vulkanSurface);
+    }
+
     internal void Retain()
     {
         if (IsInvalid)

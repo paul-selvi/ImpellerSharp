@@ -20,8 +20,13 @@ internal sealed class TypographyScene : IScene
     private ImpellerParagraphHandle? _paragraph;
     private ImpellerPaintHandle? _textPaint;
     private ImpellerPaintHandle? _backgroundPaint;
+    private readonly ImpellerRoundingRadii _textPanelRadii = ImpellerRoundingRadii.Uniform(24f);
     private string? _fontFamilyAlias;
     private string _sampleText = string.Empty;
+    private float _longestLine;
+    private float _minIntrinsicWidth;
+    private float _maxIntrinsicWidth;
+    private uint _lineCount;
 
     public string Name => "typography";
 
@@ -58,6 +63,10 @@ internal sealed class TypographyScene : IScene
         builder.PopStyle();
 
         _paragraph = builder.Build(960f);
+        _longestLine = _paragraph.GetLongestLineWidth();
+        _minIntrinsicWidth = _paragraph.GetMinIntrinsicWidth();
+        _maxIntrinsicWidth = _paragraph.GetMaxIntrinsicWidth();
+        _lineCount = _paragraph.GetLineCount();
     }
 
     public ImpellerDisplayListHandle CreateDisplayList(ImpellerContextHandle context, int frameIndex)
@@ -67,6 +76,9 @@ internal sealed class TypographyScene : IScene
 
         if (_paragraph is not null)
         {
+            var panelBounds = new ImpellerRect(140f, 140f, 1000f, 440f);
+            builder.DrawRoundedRect(panelBounds, _textPanelRadii, _backgroundPaint!);
+
             builder.DrawParagraph(_paragraph, new ImpellerPoint(160f, 200f));
         }
 
@@ -76,7 +88,8 @@ internal sealed class TypographyScene : IScene
     public string DescribeFrame(int frameIndex)
     {
         var fontAlias = _fontFamilyAlias ?? "unknown";
-        return $"typography:font={fontAlias};length={_sampleText.Length};frame={frameIndex}";
+        return FormattableString.Invariant(
+            $"typography:font={fontAlias};length={_sampleText.Length};lines={_lineCount};longest={_longestLine:F2};minW={_minIntrinsicWidth:F2};maxW={_maxIntrinsicWidth:F2};frame={frameIndex}");
     }
 
     public void Dispose()

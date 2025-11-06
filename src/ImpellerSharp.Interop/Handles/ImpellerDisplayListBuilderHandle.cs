@@ -271,6 +271,91 @@ public sealed unsafe class ImpellerDisplayListBuilderHandle : ImpellerSafeHandle
             paintHandle);
     }
 
+    public void DrawOval(in ImpellerRect bounds, ImpellerPaintHandle paint)
+    {
+        if (paint is null || paint.IsInvalid)
+        {
+            throw new ArgumentNullException(nameof(paint));
+        }
+
+        ThrowIfInvalid();
+        var rect = bounds;
+        ImpellerNative.ImpellerDisplayListBuilderDrawOval(handle, &rect, paint.DangerousGetHandle());
+    }
+
+    public void DrawRoundedRect(in ImpellerRect rect, in ImpellerRoundingRadii radii, ImpellerPaintHandle paint)
+    {
+        if (paint is null || paint.IsInvalid)
+        {
+            throw new ArgumentNullException(nameof(paint));
+        }
+
+        ThrowIfInvalid();
+        var value = rect;
+        var rounded = radii;
+        ImpellerNative.ImpellerDisplayListBuilderDrawRoundedRect(handle, &value, &rounded, paint.DangerousGetHandle());
+    }
+
+    public void DrawRoundedRectDifference(
+        in ImpellerRect outerRect,
+        in ImpellerRoundingRadii outerRadii,
+        in ImpellerRect innerRect,
+        in ImpellerRoundingRadii innerRadii,
+        ImpellerPaintHandle paint)
+    {
+        if (paint is null || paint.IsInvalid)
+        {
+            throw new ArgumentNullException(nameof(paint));
+        }
+
+        ThrowIfInvalid();
+        var outer = outerRect;
+        var outerRound = outerRadii;
+        var inner = innerRect;
+        var innerRound = innerRadii;
+        ImpellerNative.ImpellerDisplayListBuilderDrawRoundedRectDifference(
+            handle,
+            &outer,
+            &outerRound,
+            &inner,
+            &innerRound,
+            paint.DangerousGetHandle());
+    }
+
+    public void DrawDisplayList(ImpellerDisplayListHandle displayList, float opacity = 1.0f)
+    {
+        if (displayList is null || displayList.IsInvalid)
+        {
+            throw new ArgumentNullException(nameof(displayList));
+        }
+
+        ThrowIfInvalid();
+        ImpellerNative.ImpellerDisplayListBuilderDrawDisplayList(handle, displayList.DangerousGetHandle(), opacity);
+    }
+
+    public void DrawShadow(
+        ImpellerPathHandle path,
+        in ImpellerColor color,
+        float elevation,
+        bool occluderIsTransparent,
+        float devicePixelRatio)
+    {
+        if (path is null || path.IsInvalid)
+        {
+            throw new ArgumentNullException(nameof(path));
+        }
+
+        ThrowIfInvalid();
+        var value = color;
+        ImpellerNative.ImpellerDisplayListBuilderDrawShadow(
+            handle,
+            path.DangerousGetHandle(),
+            &value,
+            elevation,
+            occluderIsTransparent,
+            devicePixelRatio);
+    }
+
     public void DrawParagraph(
         ImpellerParagraphHandle paragraph,
         in ImpellerPoint origin)

@@ -7,7 +7,14 @@ internal sealed class RectGridScene : IScene
 {
     private ImpellerPaintHandle? _fillPaint;
     private ImpellerPaintHandle? _backgroundPaint;
+    private ImpellerPaintHandle? _strokePaint;
+    private ImpellerPathHandle? _tilePath;
+    private ImpellerPathHandle? _tileOutlinePath;
+    private ImpellerPathHandle? _badgePath;
     private ImpellerRect[] _rects = Array.Empty<ImpellerRect>();
+    private ImpellerRoundingRadii _tileRadii;
+    private ImpellerRect _tilePathBounds;
+    private ImpellerRect _badgeBounds;
 
     public string Name => "rects";
 
@@ -19,6 +26,41 @@ internal sealed class RectGridScene : IScene
         _backgroundPaint = ImpellerPaintHandle.Create();
         _backgroundPaint.SetColor(new ImpellerColor(0.08f, 0.08f, 0.1f, 1f));
 
+        _strokePaint = ImpellerPaintHandle.Create();
+        _strokePaint.SetColor(new ImpellerColor(0.98f, 0.98f, 1f, 1f));
+        _strokePaint.SetDrawStyle(ImpellerDrawStyle.Stroke);
+        _strokePaint.SetStrokeWidth(2.5f);
+        _strokePaint.SetStrokeMiter(4f);
+
+        _tileRadii = ImpellerRoundingRadii.Uniform(12f);
+
+        using (var pathBuilder = ImpellerPathBuilderHandle.Create())
+        {
+            var canonicalTile = new ImpellerRect(-TileWidth / 2f, -TileHeight / 2f, TileWidth, TileHeight);
+            pathBuilder.AddRoundedRect(canonicalTile, _tileRadii);
+            pathBuilder.ClosePath();
+            _tileOutlinePath = pathBuilder.CopyPath();
+            _tilePath = pathBuilder.TakePath();
+        }
+
+        _tilePathBounds = _tilePath?.GetBounds() ?? default;
+
+        using (var badgeBuilder = ImpellerPathBuilderHandle.Create())
+        {
+            var barRect = new ImpellerRect(-14f, -6f, 28f, 12f);
+            badgeBuilder.AddRect(barRect);
+
+            var arcBounds = new ImpellerRect(-14f, -14f, 28f, 28f);
+            badgeBuilder.AddArc(arcBounds, -120f, 120f);
+
+            var capOval = new ImpellerRect(-6f, -6f, 12f, 12f);
+            badgeBuilder.AddOval(capOval);
+            badgeBuilder.ClosePath();
+            _badgePath = badgeBuilder.TakePath();
+        }
+
+        _badgeBounds = _badgePath?.GetBounds() ?? default;
+
         _rects = BuildRectangles(256);
     }
 
@@ -26,14 +68,51 @@ internal sealed class RectGridScene : IScene
     {
         using var builder = ImpellerDisplayListBuilderHandle.Create();
 
-        var background = new ImpellerRect(0, 0, 1280, 720);
-        builder.DrawRect(background, _backgroundPaint!);
+        var viewport = new ImpellerRect(24f, 24f, 1280f - 48f, 720f - 48f);
+        var viewportRadii = ImpellerRoundingRadii.Uniform(28f);
+        builder.DrawRoundedRect(viewport, viewportRadii, _backgroundPaint!);
+
+        var innerViewport = new ImpellerRect(viewport.X + 24f, viewport.Y + 24f, viewport.Width - 48f, viewport.Height - 48f);
+        var innerRadii = ImpellerRoundingRadii.Uniform(18f);
+        builder.DrawRoundedRectDifference(viewport, viewportRadii, innerViewport, innerRadii, _backgroundPaint!);
 
         var paint = _fillPaint!;
 
         for (var i = 0; i < _rects.Length; i++)
         {
-            builder.DrawRect(_rects[i], paint);
+            ref readonly var rect = ref _rects[i];
+
+            if (_tilePath is not null)
+            {
+                builder.Save();
+                builder.Translate(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f);
+                builder.DrawShadow(
+                    _tilePath,
+                    new ImpellerColor(0f, 0f, 0f, 0.35f),
+                    elevation: 6f,
+                    occluderIsTransparent: false,
+                    devicePixelRatio: 1f);
+                builder.Restore();
+            }
+
+            builder.DrawRoundedRect(rect, _tileRadii, paint);
+            builder.DrawRoundedRect(rect, _tileRadii, _strokePaint!);
+
+            if (_badgePath is not null && i % 32 == 0)
+            {
+                builder.Save();
+                builder.Translate(rect.X + rect.Width - 18f, rect.Y + 18f);
+                builder.DrawPath(_badgePath, _strokePaint!);
+                builder.Restore();
+            }
+
+            if (_tileOutlinePath is not null && i == 0)
+            {
+                builder.Save();
+                builder.Translate(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f);
+                builder.DrawPath(_tileOutlinePath, _strokePaint!);
+                builder.Restore();
+            }
         }
 
         return builder.Build();
@@ -60,7 +139,8 @@ internal sealed class RectGridScene : IScene
             sumHeight += rect.Height;
         }
 
-        return $"rects:count={_rects.Length};sumX={sumX:F2};sumY={sumY:F2};sumW={sumWidth:F2};sumH={sumHeight:F2};frame={frameIndex}";
+        return FormattableString.Invariant(
+            $"rects:count={_rects.Length};tile={_tilePathBounds.Width:F1}x{_tilePathBounds.Height:F1};badge={_badgeBounds.Width:F1}x{_badgeBounds.Height:F1};sumX={sumX:F2};sumY={sumY:F2};sumW={sumWidth:F2};sumH={sumHeight:F2};frame={frameIndex}");
     }
 
     public void Dispose()
@@ -70,17 +150,29 @@ internal sealed class RectGridScene : IScene
 
         _backgroundPaint?.Dispose();
         _backgroundPaint = null;
+
+        _strokePaint?.Dispose();
+        _strokePaint = null;
+
+        _tilePath?.Dispose();
+        _tilePath = null;
+
+        _tileOutlinePath?.Dispose();
+        _tileOutlinePath = null;
+
+        _badgePath?.Dispose();
+        _badgePath = null;
     }
 
     private static ImpellerRect[] BuildRectangles(int count)
     {
         var rects = new ImpellerRect[count];
-        const float baseX = 48f;
-        const float baseY = 48f;
-        const float width = 80f;
-        const float height = 80f;
+        const float baseX = 64f;
+        const float baseY = 64f;
+        const float width = TileWidth;
+        const float height = TileHeight;
         const float spacing = 16f;
-        const int columns = 16;
+        const int columns = 12;
 
         for (var i = 0; i < count; i++)
         {
@@ -96,4 +188,7 @@ internal sealed class RectGridScene : IScene
 
         return rects;
     }
+
+    private const float TileWidth = 80f;
+    private const float TileHeight = 80f;
 }

@@ -25,6 +25,21 @@ public sealed class ImpellerPathHandle : ImpellerSafeHandle
         ImpellerNative.ImpellerPathRetain(handle);
     }
 
+    public ImpellerRect GetBounds()
+    {
+        if (IsInvalid)
+        {
+            throw new ObjectDisposedException(nameof(ImpellerPathHandle));
+        }
+
+        unsafe
+        {
+            ImpellerRect bounds = default;
+            ImpellerNative.ImpellerPathGetBounds(handle, &bounds);
+            return bounds;
+        }
+    }
+
     internal new nint DangerousGetHandle()
     {
         if (IsInvalid)

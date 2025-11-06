@@ -133,6 +133,14 @@ internal static partial class ImpellerNative
     [SuppressGCTransition]
     internal static partial float ImpellerParagraphGetHeight(nint paragraph);
 
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerParagraphGetLongestLineWidth")]
+    [SuppressGCTransition]
+    internal static partial float ImpellerParagraphGetLongestLineWidth(nint paragraph);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerParagraphGetMinIntrinsicWidth")]
+    [SuppressGCTransition]
+    internal static partial float ImpellerParagraphGetMinIntrinsicWidth(nint paragraph);
+
     [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerParagraphGetMaxIntrinsicWidth")]
     [SuppressGCTransition]
     internal static partial float ImpellerParagraphGetMaxIntrinsicWidth(nint paragraph);

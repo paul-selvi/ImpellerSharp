@@ -42,4 +42,35 @@ internal static partial class ImpellerNative
     [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPathBuilderTakePathNew")]
     [SuppressGCTransition]
     internal static partial nint ImpellerPathBuilderTakePathNew(nint builder, ImpellerFillType fillType);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPathBuilderAddRect")]
+    [SuppressGCTransition]
+    internal static unsafe partial void ImpellerPathBuilderAddRect(nint builder, ImpellerRect* rect);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPathBuilderAddArc")]
+    [SuppressGCTransition]
+    internal static unsafe partial void ImpellerPathBuilderAddArc(
+        nint builder,
+        ImpellerRect* ovalBounds,
+        float startAngleDegrees,
+        float endAngleDegrees);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPathBuilderAddOval")]
+    [SuppressGCTransition]
+    internal static unsafe partial void ImpellerPathBuilderAddOval(nint builder, ImpellerRect* ovalBounds);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPathBuilderAddRoundedRect")]
+    [SuppressGCTransition]
+    internal static unsafe partial void ImpellerPathBuilderAddRoundedRect(
+        nint builder,
+        ImpellerRect* rect,
+        ImpellerRoundingRadii* roundingRadii);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPathBuilderClose")]
+    [SuppressGCTransition]
+    internal static partial void ImpellerPathBuilderClose(nint builder);
+
+    [LibraryImport(ImpellerLibrary.Name, EntryPoint = "ImpellerPathBuilderCopyPathNew")]
+    [SuppressGCTransition]
+    internal static partial nint ImpellerPathBuilderCopyPathNew(nint builder, ImpellerFillType fillType);
 }
