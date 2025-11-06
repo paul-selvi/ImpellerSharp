@@ -46,18 +46,18 @@ jobs:
         run: |
           if [ ! -f .gclient ]; then
             remote=$(git remote get-url origin 2>/dev/null || echo https://github.com/flutter/flutter.git)
-            cat > .gclient <<EOF
-solutions = [
-  {
-    "custom_deps": {},
-    "deps_file": "DEPS",
-    "managed": False,
-    "name": ".",
-    "safesync_url": "",
-    "url": "$remote",
-  },
-]
-EOF
+            {
+              echo 'solutions = ['
+              echo '  {'
+              echo '    "custom_deps": {},'
+              echo '    "deps_file": "DEPS",'
+              echo '    "managed": False,'
+              echo '    "name": ".",'
+              echo '    "safesync_url": "",'
+              printf '    "url": "%s",\n' "$remote"
+              echo '  },'
+              echo ']'
+            } > .gclient
           fi
           gclient sync
       - name: Generate GN files
