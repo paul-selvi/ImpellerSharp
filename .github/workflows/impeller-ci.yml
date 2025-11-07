@@ -49,25 +49,34 @@ jobs:
           export PATH="${{ github.workspace }}/extern/depot_tools:$PATH"
           if [ ! -f .gclient ]; then
             remote=$(git remote get-url origin 2>/dev/null || echo https://github.com/flutter/flutter.git)
-            cat <<EOF > .gclient
-solutions = [
-  {
-    "custom_deps": {},
+            REMOTE_URL="$remote" TARGET_OS="${{ matrix.target_os }}" TARGET_CPU="${{ matrix.target_cpu }}" python3 - <<'PY'
+import os
+from pathlib import Path
+
+remote = os.environ["REMOTE_URL"]
+target_os = os.environ["TARGET_OS"]
+target_cpu = os.environ["TARGET_CPU"]
+
+content = f"""solutions = [
+  {{
+    "custom_deps": {{}},
     "deps_file": "DEPS",
     "managed": False,
     "name": ".",
     "safesync_url": "",
-    "url": "$remote",
-    "custom_vars": {
+    "url": "{remote}",
+    "custom_vars": {{
       "download_android_deps": False,
       "download_fuchsia_deps": False,
       "download_fuchsia_sdk": False,
-    },
-  },
+    }},
+  }},
 ]
-target_os = ["${{ matrix.target_os }}"]
-target_cpu = ["${{ matrix.target_cpu }}"]
-EOF
+target_os = ["{target_os}"]
+target_cpu = ["{target_cpu}"]
+"""
+Path(".gclient").write_text(content)
+PY
           fi
           gclient sync --no-history --nohooks
           python3 engine/src/flutter/third_party/dart/tools/generate_package_config.py
