@@ -96,12 +96,12 @@ def ensure_gclient_config(flutter_root: Path, platform_name: str, arch: str) -> 
     if target_os is None:
         raise ValueError(f"Unsupported platform '{platform_name}'.")
 
-    custom_vars = """
-custom_vars = {
-  "download_android_deps": False,
-  "download_fuchsia_deps": False,
-  "download_fuchsia_sdk": False,
-}
+    custom_vars_block = """
+    "custom_vars": {
+      "download_android_deps": False,
+      "download_fuchsia_deps": False,
+      "download_fuchsia_sdk": False,
+    },
 """.strip()
 
     config_contents = f"""solutions = [
@@ -112,11 +112,11 @@ custom_vars = {
     "name": ".",
     "safesync_url": "",
     "url": "{remote_url}",
+    {custom_vars_block}
   }},
 ]
 target_os = ["{target_os}"]
 target_cpu = ["{arch}"]
-{custom_vars}
 """
     if config_path.exists():
         existing = config_path.read_text()
@@ -128,10 +128,14 @@ target_cpu = ["{arch}"]
 def run_gclient_sync(flutter_root: Path, repo_root: Path, platform_name: str, arch: str) -> None:
     """Ensure the Flutter checkout is hydrated."""
     env = gclient_env(repo_root)
-    if shutil.which("gclient", path=env["PATH"]) is None:
+    gclient_exe = shutil.which("gclient", path=env["PATH"])
+    if gclient_exe is None:
         raise RuntimeError("gclient not found. Ensure depot_tools submodule is present.")
     ensure_gclient_config(flutter_root, platform_name, arch)
-    run(["gclient", "sync", "--no-history"], cwd=flutter_root, env=env)
+    cmd = [gclient_exe, "sync", "--no-history"]
+    if os.name == "nt":
+        cmd = ["cmd.exe", "/c", *cmd]
+    run(cmd, cwd=flutter_root, env=env)
 
 
 def run_gn(
