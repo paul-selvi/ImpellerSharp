@@ -53,9 +53,9 @@ jobs:
 import os
 from pathlib import Path
 
-remote = os.environ["REMOTE_URL"]
-target_os = os.environ["TARGET_OS"]
-target_cpu = os.environ["TARGET_CPU"]
+remote = os.environ.get("REMOTE_URL", "https://github.com/flutter/flutter.git")
+target_os = os.environ.get("TARGET_OS", "linux")
+target_cpu = os.environ.get("TARGET_CPU", "x64")
 
 content = f"""solutions = [
   {{
