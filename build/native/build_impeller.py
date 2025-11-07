@@ -77,7 +77,7 @@ def gclient_env(repo_root: Path) -> dict[str, str]:
     return env
 
 
-def run_linux_post_sync_hooks(flutter_root: Path, env: dict[str, str]) -> None:
+def run_linux_post_sync_hooks(flutter_root: Path, env: dict[str, str], arch: str) -> None:
     """Run the minimal set of hooks required after a --nohooks sync on Linux."""
     python = sys.executable or "python3"
     scripts = [
@@ -87,6 +87,8 @@ def run_linux_post_sync_hooks(flutter_root: Path, env: dict[str, str]) -> None:
     ]
     for script in scripts:
         run([python, str(script)], cwd=flutter_root, env=env)
+    sysroot_script = flutter_root / "engine" / "src" / "build" / "linux" / "sysroot_scripts" / "install-sysroot.py"
+    run([python, str(sysroot_script), f"--arch={arch}"], cwd=flutter_root, env=env)
 
 
 def ensure_gclient_config(flutter_root: Path, platform_name: str, arch: str) -> None:
@@ -159,7 +161,7 @@ def run_gclient_sync(flutter_root: Path, repo_root: Path, platform_name: str, ar
         cmd = ["cmd.exe", "/c", *cmd]
     run(cmd, cwd=flutter_root, env=env)
     if run_manual_hooks:
-        run_linux_post_sync_hooks(flutter_root, env)
+        run_linux_post_sync_hooks(flutter_root, env, arch)
 
 
 def run_gn(
