@@ -69,6 +69,8 @@ content = f"""solutions = [
       "download_android_deps": False,
       "download_fuchsia_deps": False,
       "download_fuchsia_sdk": False,
+      "download_windows_deps": False,
+      "download_linux_deps": False,
     }},
   }},
 ]
