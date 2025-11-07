@@ -122,6 +122,8 @@ def ensure_gclient_config(flutter_root: Path, platform_name: str, arch: str) -> 
       "download_android_deps": False,
       "download_fuchsia_deps": False,
       "download_fuchsia_sdk": False,
+      "download_windows_deps": False,
+      "download_linux_deps": False,
     },
 """.strip()
 
