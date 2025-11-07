@@ -86,6 +86,8 @@ jobs:
     runs-on: ubuntu-22.04
     needs:
       - native_impeller
+    env:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -158,9 +160,7 @@ jobs:
           path: ${{ env.symbol_bundle }}
 
       - name: Publish to NuGet
-        if: ${{ secrets.NUGET_API_KEY != '' }}
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        if: env.NUGET_API_KEY != ''
         run: |
           for pkg in artifacts/nuget/*.nupkg; do
             dotnet nuget push "$pkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate;
