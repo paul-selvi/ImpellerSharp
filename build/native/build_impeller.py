@@ -58,6 +58,11 @@ def default_flutter_root(repo_root: Path) -> Path:
     return repo_root / "extern" / "flutter"
 
 
+def host_architecture() -> str:
+    """Return normalized architecture for the current host machine."""
+    return normalize_arch(platform.machine())
+
+
 def gclient_env(repo_root: Path) -> dict[str, str]:
     """Augment PATH so depot_tools is picked up when running gclient."""
     env = os.environ.copy()
@@ -70,6 +75,18 @@ def gclient_env(repo_root: Path) -> dict[str, str]:
     if os.name == "nt":
         env.setdefault("DEPOT_TOOLS_WIN_TOOLCHAIN", "0")
     return env
+
+
+def run_linux_post_sync_hooks(flutter_root: Path, env: dict[str, str]) -> None:
+    """Run the minimal set of hooks required after a --nohooks sync on Linux."""
+    python = sys.executable or "python3"
+    scripts = [
+        flutter_root / "engine" / "src" / "flutter" / "third_party" / "dart" / "tools" / "generate_package_config.py",
+        flutter_root / "engine" / "src" / "flutter" / "third_party" / "dart" / "tools" / "generate_sdk_version_file.py",
+        flutter_root / "engine" / "src" / "flutter" / "tools" / "pub_get_offline.py",
+    ]
+    for script in scripts:
+        run([python, str(script)], cwd=flutter_root, env=env)
 
 
 def ensure_gclient_config(flutter_root: Path, platform_name: str, arch: str) -> None:
@@ -135,9 +152,14 @@ def run_gclient_sync(flutter_root: Path, repo_root: Path, platform_name: str, ar
         raise RuntimeError("gclient not found. Ensure depot_tools submodule is present.")
     ensure_gclient_config(flutter_root, platform_name, arch)
     cmd = [gclient_exe, "sync", "--no-history"]
+    run_manual_hooks = platform_name == "linux"
+    if run_manual_hooks:
+        cmd.append("--nohooks")
     if os.name == "nt":
         cmd = ["cmd.exe", "/c", *cmd]
     run(cmd, cwd=flutter_root, env=env)
+    if run_manual_hooks:
+        run_linux_post_sync_hooks(flutter_root, env)
 
 
 def run_gn(
@@ -172,7 +194,10 @@ def run_gn(
     if platform_name == "macos":
         args.extend(["--mac", "--mac-cpu", arch])
     elif platform_name == "linux":
-        args.extend(["--linux", "--linux-cpu", arch])
+        host_arch = host_architecture()
+        host_is_linux = sys.platform.startswith("linux")
+        if not host_is_linux or arch != host_arch:
+            args.extend(["--linux", "--linux-cpu", arch])
     elif platform_name == "windows":
         args.extend(["--windows", "--windows-cpu", arch])
     else:
