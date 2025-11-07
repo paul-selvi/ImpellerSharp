@@ -73,6 +73,9 @@ EOF
           python3 engine/src/flutter/third_party/dart/tools/generate_package_config.py
           python3 engine/src/flutter/third_party/dart/tools/generate_sdk_version_file.py
           python3 engine/src/flutter/tools/pub_get_offline.py
+          if [[ "${{ matrix.target_os }}" == "linux" ]]; then
+            python3 engine/src/build/linux/sysroot_scripts/install-sysroot.py --arch=${{ matrix.target_cpu }}
+          fi
       - name: Generate GN files
         working-directory: extern/flutter
         run: ./engine/src/flutter/tools/gn --unoptimized --runtime-mode debug --${{ matrix.target_os }} --target-dir impeller_host_debug --${{ matrix.target_os }}-cpu ${{ matrix.target_cpu }}
