@@ -62,16 +62,17 @@ def gclient_env(repo_root: Path) -> dict[str, str]:
     """Augment PATH so depot_tools is picked up when running gclient."""
     env = os.environ.copy()
     depot_tools = repo_root / "extern" / "depot_tools"
-    path = env.get("PATH", "")
-    env["PATH"] = f"{depot_tools}{os.pathsep}{path}"
+    path_key = next((key for key in env.keys() if key.lower() == "path"), "PATH")
+    path = env.get(path_key, "")
+    env[path_key] = f"{depot_tools}{os.pathsep}{path}"
+    if path_key != "PATH":
+        env["PATH"] = env[path_key]
     return env
 
 
-def ensure_gclient_config(flutter_root: Path) -> None:
+def ensure_gclient_config(flutter_root: Path, platform_name: str, arch: str) -> None:
     """Ensure a .gclient config exists so gclient sync succeeds."""
     config_path = flutter_root / ".gclient"
-    if config_path.exists():
-        return
     try:
         remote_url = (
             subprocess.check_output(
@@ -85,6 +86,24 @@ def ensure_gclient_config(flutter_root: Path) -> None:
         remote_url = "https://github.com/flutter/flutter.git"
     if not remote_url:
         remote_url = "https://github.com/flutter/flutter.git"
+
+    target_os_map = {
+        "macos": "mac",
+        "linux": "linux",
+        "windows": "win",
+    }
+    target_os = target_os_map.get(platform_name)
+    if target_os is None:
+        raise ValueError(f"Unsupported platform '{platform_name}'.")
+
+    custom_vars = """
+custom_vars = {
+  "download_android_deps": False,
+  "download_fuchsia_deps": False,
+  "download_fuchsia_sdk": False,
+}
+""".strip()
+
     config_contents = f"""solutions = [
   {{
     "custom_deps": {{}},
@@ -95,17 +114,24 @@ def ensure_gclient_config(flutter_root: Path) -> None:
     "url": "{remote_url}",
   }},
 ]
+target_os = ["{target_os}"]
+target_cpu = ["{arch}"]
+{custom_vars}
 """
+    if config_path.exists():
+        existing = config_path.read_text()
+        if existing == config_contents:
+            return
     config_path.write_text(config_contents)
 
 
-def run_gclient_sync(flutter_root: Path, repo_root: Path) -> None:
+def run_gclient_sync(flutter_root: Path, repo_root: Path, platform_name: str, arch: str) -> None:
     """Ensure the Flutter checkout is hydrated."""
     env = gclient_env(repo_root)
     if shutil.which("gclient", path=env["PATH"]) is None:
         raise RuntimeError("gclient not found. Ensure depot_tools submodule is present.")
-    ensure_gclient_config(flutter_root)
-    run(["gclient", "sync"], cwd=flutter_root, env=env)
+    ensure_gclient_config(flutter_root, platform_name, arch)
+    run(["gclient", "sync", "--no-history"], cwd=flutter_root, env=env)
 
 
 def run_gn(
@@ -255,7 +281,7 @@ def main() -> None:
     env = gclient_env(repo_root)
 
     if not args.skip_sync:
-        run_gclient_sync(flutter_root, repo_root)
+        run_gclient_sync(flutter_root, repo_root, platform_name, arch)
 
     out_dir = run_gn(flutter_root, platform_name, arch, configuration, env)
     run_ninja(out_dir, env)
