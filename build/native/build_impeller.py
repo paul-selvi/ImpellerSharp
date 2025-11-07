@@ -77,8 +77,8 @@ def gclient_env(repo_root: Path) -> dict[str, str]:
     return env
 
 
-def run_linux_post_sync_hooks(flutter_root: Path, env: dict[str, str], arch: str) -> None:
-    """Run the minimal set of hooks required after a --nohooks sync on Linux."""
+def run_post_sync_hooks(flutter_root: Path, env: dict[str, str], platform_name: str, arch: str) -> None:
+    """Run the minimal set of hooks required after a --nohooks sync."""
     python = sys.executable or "python3"
     scripts = [
         flutter_root / "engine" / "src" / "flutter" / "third_party" / "dart" / "tools" / "generate_package_config.py",
@@ -87,8 +87,9 @@ def run_linux_post_sync_hooks(flutter_root: Path, env: dict[str, str], arch: str
     ]
     for script in scripts:
         run([python, str(script)], cwd=flutter_root, env=env)
-    sysroot_script = flutter_root / "engine" / "src" / "build" / "linux" / "sysroot_scripts" / "install-sysroot.py"
-    run([python, str(sysroot_script), f"--arch={arch}"], cwd=flutter_root, env=env)
+    if platform_name == "linux":
+        sysroot_script = flutter_root / "engine" / "src" / "build" / "linux" / "sysroot_scripts" / "install-sysroot.py"
+        run([python, str(sysroot_script), f"--arch={arch}"], cwd=flutter_root, env=env)
 
 
 def ensure_gclient_config(flutter_root: Path, platform_name: str, arch: str) -> None:
@@ -156,14 +157,14 @@ def run_gclient_sync(flutter_root: Path, repo_root: Path, platform_name: str, ar
         raise RuntimeError("gclient not found. Ensure depot_tools submodule is present.")
     ensure_gclient_config(flutter_root, platform_name, arch)
     cmd = [gclient_exe, "sync", "--no-history"]
-    run_manual_hooks = platform_name == "linux"
+    run_manual_hooks = platform_name in {"linux", "windows"}
     if run_manual_hooks:
         cmd.append("--nohooks")
     if os.name == "nt":
         cmd = ["cmd.exe", "/c", *cmd]
     run(cmd, cwd=flutter_root, env=env)
     if run_manual_hooks:
-        run_linux_post_sync_hooks(flutter_root, env, arch)
+        run_post_sync_hooks(flutter_root, env, platform_name, arch)
 
 
 def run_gn(
