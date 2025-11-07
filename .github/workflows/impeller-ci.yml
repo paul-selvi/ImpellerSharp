@@ -31,6 +31,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Add depot_tools to PATH
         run: echo "${{ github.workspace }}/extern/depot_tools" >> $GITHUB_PATH
       - name: Install dependencies
@@ -44,6 +46,7 @@ jobs:
       - name: Sync dependencies
         working-directory: extern/flutter
         run: |
+          export PATH="${{ github.workspace }}/extern/depot_tools:$PATH"
           if [ ! -f .gclient ]; then
             remote=$(git remote get-url origin 2>/dev/null || echo https://github.com/flutter/flutter.git)
             {
