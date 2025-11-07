@@ -67,6 +67,8 @@ def gclient_env(repo_root: Path) -> dict[str, str]:
     env[path_key] = f"{depot_tools}{os.pathsep}{path}"
     if path_key != "PATH":
         env["PATH"] = env[path_key]
+    if os.name == "nt":
+        env.setdefault("DEPOT_TOOLS_WIN_TOOLCHAIN", "0")
     return env
 
 
